@@ -197,7 +197,7 @@ export const renderDishPairingLinks = (
                 <Link
                     key={match.index}
                     href={`/recipe/${link.recipeId}`}
-                    className="font-bold text-blue-600 hover:underline"
+                    className="text-amber-700 hover:text-amber-800 font-medium underline"
                 >
                     {boldText}
                 </Link>
@@ -207,7 +207,7 @@ export const renderDishPairingLinks = (
                 <button
                     key={match.index}
                     onClick={() => onSuggestionClick(`Give me a recipe for ${boldText}`)}
-                    className="font-bold text-blue-600 hover:underline cursor-pointer"
+                    className="text-amber-700 hover:text-amber-800 font-medium underline cursor-pointer"
                 >
                     {boldText}
                 </button>

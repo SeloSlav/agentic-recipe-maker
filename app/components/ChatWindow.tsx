@@ -289,7 +289,7 @@ export const ChatWindow = forwardRef(
           const reader = response.body.getReader();
           const decoder = new TextDecoder();
           let buffer = "";
-          let doneEvent: { assistantMessage?: string; pointsAwarded?: { points: number; message: string }; timerSeconds?: number } | null = null;
+          let doneEvent: { assistantMessage?: string; pointsAwarded?: { points: number; message: string }; timerSeconds?: number; recipeLinks?: { name: string; recipeId: string; url: string }[] } | null = null;
 
           while (true) {
             const { done, value } = await reader.read();
@@ -339,7 +339,9 @@ export const ChatWindow = forwardRef(
           setMealPlanProgress(null);
           if (doneEvent?.assistantMessage) {
             setMessages((prev) => {
-              const next: Message[] = [...prev, { role: "assistant", content: doneEvent!.assistantMessage! }];
+              const msg: Message = { role: "assistant", content: doneEvent!.assistantMessage! };
+              if (doneEvent!.recipeLinks?.length) msg.recipeLinks = doneEvent!.recipeLinks;
+              const next: Message[] = [...prev, msg];
               if (doneEvent!.timerSeconds != null && doneEvent!.timerSeconds > 0) {
                 next.push({ role: "assistant", content: `TIMER_REQUEST_${doneEvent!.timerSeconds}` });
               }

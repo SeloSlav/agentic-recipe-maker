@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { awardPointsServer } from '../../lib/spoonPointsServer';
 import { admin } from '../../firebase/firebaseAdmin';
 import { queryCorpus } from '../../lib/stores/balkanCorpusStore';
+import { resolveRecipeLinks } from '../../lib/resolvePairingLinks';
 
 // Add timer detection helper
 const isTimerRequest = (text: string): { isTimer: boolean; seconds: number } => {
@@ -437,6 +438,16 @@ ${memoryContext}`;
               const hasDirections = assistantMessage.toLowerCase().includes("directions");
               const isRecipe = hasRecipeName && hasIngredients && hasDirections;
 
+              let recipeLinks: { name: string; recipeId: string; url: string }[] = [];
+              const isPairingContent = (assistantMessage || "").toLowerCase().includes("pairing") || (assistantMessage || "").toLowerCase().includes("complement");
+              if (isPairingContent) {
+                try {
+                  recipeLinks = await resolveRecipeLinks(assistantMessage || "");
+                } catch (e) {
+                  console.error("Pairing link resolution failed:", e);
+                }
+              }
+
               let pointsAwarded: { points: number; message: string } | null = null;
               if (isRecipe && userIsAuthenticated) {
                 const docId = `${verifiedUserId}-${Date.now()}`;
@@ -472,6 +483,7 @@ ${memoryContext}`;
                 assistantMessage,
                 pointsAwarded,
                 ...(timerSecondsFromTool != null && { timerSeconds: timerSecondsFromTool }),
+                ...(recipeLinks.length > 0 && { recipeLinks }),
               }));
             }
           }
