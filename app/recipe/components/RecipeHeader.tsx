@@ -5,6 +5,9 @@ import { faCopy, faThumbtack, faTrashCan, faHeart } from "@fortawesome/free-soli
 import { Recipe } from "../types";
 import { FilterTag } from "../../components/FilterTag";
 
+/** Likes feature hidden from UI (data preserved). Set to true to re-enable. */
+const SHOW_RECIPE_LIKES = false;
+
 interface RecipeHeaderProps {
   recipe: Recipe;
   isOwner: boolean;
@@ -101,28 +104,32 @@ export const RecipeHeader = ({
           <span className="ml-2 text-sm">{copySuccess ? 'Link Copied!' : 'Share Recipe'}</span>
         </button>
 
-        {/* Like button for all users */}
-        <div className="w-px h-6 bg-amber-200" /> {/* Divider */}
-        {handleLike && currentUser ? (
-          <button
-            onClick={handleLike}
-            disabled={hasLiked}
-            className={`flex items-center transition-colors duration-200 ${
-              hasLiked ? 'text-red-500 cursor-default' : 'text-amber-900/80 hover:text-red-500'
-            }`}
-          >
-            <FontAwesomeIcon icon={faHeart} className="w-5 h-5" />
-            <span className="ml-2 text-sm">
-              {hasLiked ? 'Liked' : 'Like Recipe'} {recipe.likes?.length ? `(${recipe.likes.length})` : ''}
-            </span>
-          </button>
-        ) : (
-          <div className={`flex items-center text-amber-800/70`}>
-            <FontAwesomeIcon icon={faHeart} className="w-5 h-5" />
-            <span className="ml-2 text-sm">
-              {recipe.likes?.length || 0} {recipe.likes?.length === 1 ? 'Like' : 'Likes'}
-            </span>
-          </div>
+        {SHOW_RECIPE_LIKES && (
+          <>
+            {/* Like button for all users */}
+            <div className="w-px h-6 bg-amber-200" /> {/* Divider */}
+            {handleLike && currentUser ? (
+              <button
+                onClick={handleLike}
+                disabled={hasLiked}
+                className={`flex items-center transition-colors duration-200 ${
+                  hasLiked ? 'text-red-500 cursor-default' : 'text-amber-900/80 hover:text-red-500'
+                }`}
+              >
+                <FontAwesomeIcon icon={faHeart} className="w-5 h-5" />
+                <span className="ml-2 text-sm">
+                  {hasLiked ? 'Liked' : 'Like Recipe'} {recipe.likes?.length ? `(${recipe.likes.length})` : ''}
+                </span>
+              </button>
+            ) : (
+              <div className={`flex items-center text-amber-800/70`}>
+                <FontAwesomeIcon icon={faHeart} className="w-5 h-5" />
+                <span className="ml-2 text-sm">
+                  {recipe.likes?.length || 0} {recipe.likes?.length === 1 ? 'Like' : 'Likes'}
+                </span>
+              </div>
+            )}
+          </>
         )}
 
         {canManage && (

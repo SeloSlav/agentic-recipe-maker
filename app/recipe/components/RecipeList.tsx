@@ -13,6 +13,9 @@ import Image from 'next/image';
 import { Recipe } from '../types';
 import { faHeart } from '@fortawesome/free-solid-svg-icons';
 
+/** Likes feature hidden from UI (data preserved). Set to true to re-enable. */
+const SHOW_RECIPE_LIKES = false;
+
 const shimmer = (w: number, h: number) => `
 <svg width="${w}" height="${h}" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
   <defs>
@@ -169,7 +172,7 @@ export const RecipeCard = ({ recipe, onLike, currentUser, showUsername = false }
               </div>
             </Link>
             <div className="flex items-center gap-2">
-              {onLike && (
+              {SHOW_RECIPE_LIKES && onLike && (
                 <button
                   onClick={(e) => {
                     e.preventDefault();
@@ -252,7 +255,7 @@ export const RecipeCard = ({ recipe, onLike, currentUser, showUsername = false }
             )}
           </div>
           <div className="flex items-center gap-2">
-            {onLike && (
+            {SHOW_RECIPE_LIKES && onLike && (
               <button
                 onClick={(e) => {
                   e.preventDefault();
