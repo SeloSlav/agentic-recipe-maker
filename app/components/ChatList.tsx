@@ -15,6 +15,9 @@ export interface ChatSummary {
   messageCount: number;
 }
 
+const MAX_PINNED_CHATS = 3;
+const MAX_VISIBLE_RECENT_CHATS = 4;
+
 interface ChatListProps {
   currentChatId: string | null;
   onSelectChat: (id: string | null) => void;
@@ -48,6 +51,7 @@ export const ChatList: React.FC<ChatListProps> = ({
   const [menuOpen, setMenuOpen] = useState<string | null>(null);
   const [loadingPin, setLoadingPin] = useState<string | null>(null);
   const [editingChatId, setEditingChatId] = useState<string | null>(null);
+  const [pinWarning, setPinWarning] = useState<string | null>(null);
   const isPro = plan === "pro";
 
   const loadChats = async () => {
@@ -60,6 +64,7 @@ export const ChatList: React.FC<ChatListProps> = ({
       }
       const data = await res.json();
       setChats(data.chats || []);
+      setPinWarning(null);
     } catch (err) {
       console.error("Error loading chats:", err);
       setChats([]);
@@ -78,6 +83,13 @@ export const ChatList: React.FC<ChatListProps> = ({
 
   const handlePinUnpin = async (id: string, pinned: boolean) => {
     if (!isPro || !user) return;
+    if (!pinned && pinnedChats.length >= MAX_PINNED_CHATS) {
+      setPinWarning(`You can pin up to ${MAX_PINNED_CHATS} conversations. Unpin one first.`);
+      setMenuOpen(null);
+      return;
+    }
+
+    setPinWarning(null);
     setLoadingPin(id);
     try {
       const res = await fetchWithAuth(`/api/chats/${id}`, user, {
@@ -85,9 +97,17 @@ export const ChatList: React.FC<ChatListProps> = ({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ pinned: !pinned }),
       });
-      if (res.ok) await loadChats();
+      if (res.ok) {
+        await loadChats();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setPinWarning(
+          data.error || `Unable to update pin. Max ${MAX_PINNED_CHATS} pinned conversations.`
+        );
+      }
     } catch (err) {
       console.error("Error toggling pin:", err);
+      setPinWarning("Unable to update pin right now. Please try again.");
     } finally {
       setLoadingPin(null);
       setMenuOpen(null);
@@ -146,6 +166,11 @@ export const ChatList: React.FC<ChatListProps> = ({
           <FontAwesomeIcon icon={faPlus} className="w-4 h-4" />
         </button>
       </div>
+      {pinWarning && (
+        <p className="text-xs text-amber-900 bg-amber-100 border border-amber-200 rounded-md px-2 py-1">
+          {pinWarning}
+        </p>
+      )}
 
       {loading ? (
         <div className="text-sm text-amber-800/70">Loading chats...</div>
@@ -186,27 +211,35 @@ export const ChatList: React.FC<ChatListProps> = ({
                 Recent
               </h3>
             )}
-            <ul className="space-y-1">
-              {otherChats.map((chat) => (
-                <ChatItem
-                  key={chat.id}
-                  chat={chat}
-                  isActive={currentChatId === chat.id}
-                  onSelect={() => onSelectChat(chat.id)}
-                  onPinUnpin={() => handlePinUnpin(chat.id, chat.pinned)}
-                  onRename={(title) => handleRename(chat.id, title)}
-                  onDelete={() => handleDelete(chat.id)}
-                  menuOpen={menuOpen === chat.id}
-                  onMenuToggle={() => setMenuOpen(menuOpen === chat.id ? null : chat.id)}
-                  onMenuClose={() => setMenuOpen(null)}
-                  editingChatId={editingChatId}
-                  onStartEdit={() => { setEditingChatId(chat.id); setMenuOpen(null); }}
-                  onCancelEdit={() => setEditingChatId(null)}
-                  loadingPin={loadingPin === chat.id}
-                  isPro={isPro}
-                />
-              ))}
-            </ul>
+            <div
+              className={`${
+                otherChats.length > MAX_VISIBLE_RECENT_CHATS
+                  ? "max-h-[10.5rem] overflow-y-auto pr-1 chat-list-scrollbar"
+                  : ""
+              }`}
+            >
+              <ul className="space-y-1">
+                {otherChats.map((chat) => (
+                  <ChatItem
+                    key={chat.id}
+                    chat={chat}
+                    isActive={currentChatId === chat.id}
+                    onSelect={() => onSelectChat(chat.id)}
+                    onPinUnpin={() => handlePinUnpin(chat.id, chat.pinned)}
+                    onRename={(title) => handleRename(chat.id, title)}
+                    onDelete={() => handleDelete(chat.id)}
+                    menuOpen={menuOpen === chat.id}
+                    onMenuToggle={() => setMenuOpen(menuOpen === chat.id ? null : chat.id)}
+                    onMenuClose={() => setMenuOpen(null)}
+                    editingChatId={editingChatId}
+                    onStartEdit={() => { setEditingChatId(chat.id); setMenuOpen(null); }}
+                    onCancelEdit={() => setEditingChatId(null)}
+                    loadingPin={loadingPin === chat.id}
+                    isPro={isPro}
+                  />
+                ))}
+              </ul>
+            </div>
           </div>
 
           {chats.length === 0 && (

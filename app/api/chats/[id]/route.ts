@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { admin } from '../../../firebase/firebaseAdmin';
 
+const MAX_PINNED_CHATS = 3;
+
 // GET: Fetch single chat (Pro only)
 export async function GET(
   req: Request,
@@ -89,7 +91,25 @@ export async function PATCH(
 
     if (typeof body.title === 'string') updates.title = body.title.slice(0, 200);
     if (Array.isArray(body.messages)) updates.messages = body.messages;
-    if (typeof body.pinned === 'boolean') updates.pinned = body.pinned;
+    if (typeof body.pinned === 'boolean') {
+      // Enforce pinned limit server-side to prevent bypassing UI checks.
+      if (body.pinned && !data.pinned) {
+        const pinnedSnapshot = await admin
+          .firestore()
+          .collection('chats')
+          .where('userId', '==', userId)
+          .where('pinned', '==', true)
+          .get();
+
+        if (pinnedSnapshot.size >= MAX_PINNED_CHATS) {
+          return NextResponse.json(
+            { error: `You can pin up to ${MAX_PINNED_CHATS} conversations. Unpin one first.` },
+            { status: 400 }
+          );
+        }
+      }
+      updates.pinned = body.pinned;
+    }
 
     await chatRef.update(updates);
     return NextResponse.json({ ok: true });
