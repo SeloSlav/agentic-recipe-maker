@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { useAuth } from "../context/AuthContext";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faThumbtack, faTrashAlt, faEllipsisH, faPlus, faPen } from "@fortawesome/free-solid-svg-icons";
+import { MAX_PINNED_CHATS, MAX_VISIBLE_RECENT_CHATS } from "../lib/chatConstants";
 
 export interface ChatSummary {
   id: string;
@@ -14,9 +15,6 @@ export interface ChatSummary {
   updatedAt: string | null;
   messageCount: number;
 }
-
-const MAX_PINNED_CHATS = 3;
-const MAX_VISIBLE_RECENT_CHATS = 4;
 
 interface ChatListProps {
   currentChatId: string | null;

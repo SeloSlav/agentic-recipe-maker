@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { admin } from '../../../firebase/firebaseAdmin';
-
-const MAX_PINNED_CHATS = 3;
+import { MAX_PINNED_CHATS } from '../../../lib/chatConstants';
 
 // GET: Fetch single chat (Pro only)
 export async function GET(
