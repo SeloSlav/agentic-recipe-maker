@@ -2,7 +2,7 @@
   "name": "baba-selo-voice",
   "version": "0.1.0",
   "private": true,
-  "description": "A local-first Balkan cooking companion with LangGraph, SpacetimeDB, and PostgreSQL/pgvector.",
+  "description": "Local-first AI cooking companion with voice chat, Balkan recipes, and meal planning. Built with Next.js, LangChain/LangGraph, SpacetimeDB, and PostgreSQL/pgvector.",
   "license": "MIT",
   "engines": { "node": ">=22" },
   "scripts": {
