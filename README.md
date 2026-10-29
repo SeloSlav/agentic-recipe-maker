@@ -1,8 +1,8 @@
 # Baba Selo
 
-A local-first AI cooking companion with voice chat, Balkan recipes, and meal planning. Built with Next.js, LangChain/LangGraph, SpacetimeDB, and PostgreSQL/pgvector. Licensed under [MIT](LICENSE).
+A local-first AI cooking companion for Balkan recipes and meal planning. Built with Next.js, LangChain/LangGraph, SpacetimeDB, and PostgreSQL/pgvector. Licensed under [MIT](LICENSE).
 
-![Baba Selo chat interface with suggested cooking questions, image uploads, kitchen timers, and voice input](docs/images/chat-ui.jpg)
+![Baba Selo chat interface with suggested cooking questions, image uploads, and kitchen timers](docs/images/chat-ui.jpg)
 
 ## Quick start
 
