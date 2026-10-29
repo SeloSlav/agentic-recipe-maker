@@ -1,0 +1,9 @@
+{
+  "name": "baba-selo-database",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "scripts": { "build": "esbuild src/index.ts --bundle --format=esm --platform=neutral --external:spacetime:* --outfile=dist/bundle.js", "check": "tsc --noEmit" },
+  "dependencies": { "spacetimedb": "2.10.2" },
+  "devDependencies": { "esbuild": "^0.25.0", "typescript": "5.7.2" }
+}

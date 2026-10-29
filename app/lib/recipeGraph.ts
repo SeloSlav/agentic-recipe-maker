@@ -295,8 +295,8 @@ export function createRecipeGraph() {
     .addNode("enrich", enrichNode)
     .addNode("store_cache", storeCacheNode)
     .addEdge("__start__", "check_cache")
-    .addConditionalEdges("check_cache", routeAfterCache)
-    .addConditionalEdges("retrieve_corpus", routeAfterRetrieve)
+    .addConditionalEdges("check_cache", routeAfterCache, ["retrieve_corpus", "__end__"])
+    .addConditionalEdges("retrieve_corpus", routeAfterRetrieve, ["generate", "__end__"])
     .addEdge("generate", "enrich")
     .addEdge("enrich", "store_cache")
     .addEdge("store_cache", "__end__");

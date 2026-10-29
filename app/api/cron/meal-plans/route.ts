@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { admin } from '../../../firebase/firebaseAdmin';
+import { serverDb, serverAuth } from "../../../lib/backend/admin";
 import { Resend } from 'resend';
 import { generateMealPlanWithRecipes } from '../../../lib/meal-plan/mealPlanService';
 
@@ -39,7 +39,7 @@ export async function GET(req: Request) {
   }
 
   try {
-    const usersSnapshot = await admin.firestore().collection('users').get();
+    const usersSnapshot = await serverDb.collection('users').get();
     const now = new Date();
 
     let sent = 0;
@@ -63,7 +63,7 @@ export async function GET(req: Request) {
       const scheduleStr = `${schedHour.toString().padStart(2, '0')}:${(schedMin || 0).toString().padStart(2, '0')}`;
       if (scheduleStr !== nowStr) continue;
 
-      const email = d.email || (await admin.auth().getUser(doc.id).catch(() => null))?.email;
+      const email = d.email || (await serverAuth.getUser(doc.id).catch(() => null))?.email;
       if (!email) continue;
 
       try {

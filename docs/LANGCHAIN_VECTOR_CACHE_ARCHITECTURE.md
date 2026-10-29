@@ -1,178 +1,57 @@
-# LangChain + LangGraph + Vector DB Architecture
+# AI architecture
 
-## Goal
-Reduce novel OpenAI API calls when generating recipes by:
-1. **Semantic caching**: Before generating, check if a similar recipe query exists in the vector store
-2. **Cache hits**: Return cached recipe (ingredients, directions, summary, macros, pairings) → **0 API calls**
-3. **Cache misses**: Generate via OpenAI, then store in vector DB for future hits
+The `/admin/ai` explorer reads the application's compiled LangGraph graphs and registered LangChain tools. Its node explanations describe the source implementation; the diagram is architecture, not live execution telemetry. Inspecting it does not call an AI provider.
 
----
+## Chat
 
-## Current Flow (High API Usage)
+`app/api/chat/route.ts` validates messages, resolves a signed local session, and assembles the system prompt. For recipe-related messages it can retrieve corpus context; Pro users can also retrieve past conversation turns.
 
-```
-generateRecipeDetails (1 call)
-  → classifyRecipe (1 call)
-  → generateSummary (1 call)
-  → macroInfo (1 call)
-  → dishPairing (1 call)
-= 5+ LLM calls per recipe
+`app/lib/chatGraph.ts` creates a LangGraph ReAct agent with `ChatOpenAI` and tools from `chatToolsLangchain.ts`. Each tool uses a Zod argument schema and calls the application's existing handlers. The agent can loop through tools before returning its final response.
+
+```mermaid
+flowchart LR
+  Start --> Agent
+  Agent -->|tool call| Tools
+  Tools --> Agent
+  Agent -->|answer| Done
 ```
 
----
+There are 14 registered tools: image generation, recipe saving, similar recipes, serving conversion, nutrition, substitution, timers, translation, today's meals, meal-plan generation, adding a meal, seasonal tips, ingredient search, and unit conversion. Meal-plan generation emits custom progress events for the UI. Some supporting handlers call the OpenAI SDK directly.
 
-## Vector DB Choice: **pgvector** (Recommended)
+## Recipe pipeline
 
-| Factor | pgvector | ChromaDB |
-|--------|----------|----------|
-| **Railway** | ✅ Native PostgreSQL add-on with pgvector | ⚠️ Needs separate Docker/service |
-| **Storage** | ~1GB for 100k vectors | ~10GB for same data |
-| **Persistence** | ✅ Built-in | Depends on config |
-| **LangChain** | ✅ `@langchain/community` | ✅ `langchain-chroma` |
-| **Single DB** | ✅ One Postgres for app + vectors | ❌ Separate service |
+`app/lib/recipeGraph.ts` uses a `StateGraph` with explicit conditional destinations, so graph introspection shows only possible routes.
 
-**Recommendation**: Use **pgvector** on Railway PostgreSQL. One database, efficient, and Railway supports it out of the box.
-
----
-
-## Deployment Architecture
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│  VERCEL (Frontend + API Routes)                                  │
-│  - Next.js app                                                   │
-│  - /api/generateRecipeDetails, /api/chat, etc.                   │
-│  - Connects via POSTGRES_URL (Neon) or DATABASE_URL (Railway)    │
-└───────────────────────────┬─────────────────────────────────────┘
-                            │
-                            ▼
-┌─────────────────────────────────────────────────────────────────┐
-│  NEON (recommended) or RAILWAY                                   │
-│  - PostgreSQL + pgvector extension                              │
-│  - Stores: recipe embeddings + metadata (ingredients, etc.)      │
-└─────────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart LR
+  Start --> check_cache
+  check_cache -->|hit| Done
+  check_cache -->|miss| retrieve_corpus
+  retrieve_corpus -->|direct match| Done
+  retrieve_corpus -->|otherwise| generate
+  generate --> enrich
+  enrich --> store_cache
+  store_cache --> Done
 ```
 
-**Neon on Vercel (recommended):**
-- No egress fees (app + DB in same ecosystem)
-- Run: `node scripts/setup-neon-vercel.mjs` to add Neon via Vercel Marketplace
-- `POSTGRES_URL` is auto-injected by the integration
+Generation returns validated JSON ingredient and direction arrays. When `generateAll` is true, enrichment classifies the recipe, writes a summary, then requests macros and pairings in parallel. `skipMacroAndPairing` omits those two requests. Complete newly generated recipes can then be cached. A cached recipe or direct corpus match ends the graph before generation and enrichment.
 
-**Railway alternative:**
-- Add `DATABASE_URL` (Railway Postgres) to Vercel env
+## Semantic stores
 
----
+All stores use LangChain's PostgreSQL vector integration and cosine distance, where smaller values indicate closer matches. The default embedding model is `text-embedding-3-small`; model names live in `app/lib/models.ts`.
 
-## LangGraph Flow
+| Table | Purpose | Retrieval rule |
+| --- | --- | --- |
+| `recipe_embeddings` | Complete generated recipes | Distance ≤ 0.12 |
+| `enrichment_cache` | Classification, summary, macros, pairings | Distance ≤ 0.08; filter by type |
+| `balkan_recipe_corpus` | Recipe retrieval and generation context | < 0.1 returns directly; up to 3 matches < 0.3 provide context |
+| `conversation_memory` | Pro conversation recall | Distance ≤ 0.35; filter by user |
+| `recipe_index` | Similar saved recipes | Cosine ranking with duplicate/source exclusion |
 
-```
-                    ┌─────────────┐
-                    │   START     │
-                    └──────┬──────┘
-                           │
-                           ▼
-                    ┌─────────────┐
-                    │ check_cache │  ← Embed query, similarity search
-                    └──────┬──────┘
-                           │
-              ┌────────────┴────────────┐
-              │                         │
-        similarity ≥ 0.92          similarity < 0.92
-              │                         │
-              ▼                         ▼
-       ┌─────────────┐           ┌─────────────┐
-       │ return_cached│          │   generate  │  ← OpenAI (ingredients, directions)
-       └──────┬──────┘           └──────┬──────┘
-              │                         │
-              │                         ▼
-              │                  ┌─────────────┐
-              │                  │ enrich      │  ← classify, summary, macros, pairings
-              │                  └──────┬──────┘
-              │                         │
-              │                         ▼
-              │                  ┌─────────────┐
-              │                  │ store_cache │  ← Embed + insert into pgvector
-              │                  └──────┬──────┘
-              │                         │
-              └────────────┬────────────┘
-                           │
-                           ▼
-                    ┌─────────────┐
-                    │     END     │
-                    └─────────────┘
-```
+Cache hits avoid generation calls, but semantic lookup may still request an embedding. There is no fixed latency guarantee. A fresh installation starts with empty semantic stores and no private corpus. Recipes saved through the app are indexed; `npm run sync:recipes` can index the full local collection.
 
----
+## Application state
 
-## Implementation Steps
+SpacetimeDB holds private document rows keyed by collection/document paths. The Next.js server reads with the database owner's credential, which never reaches the browser. Writes and field transforms run in a transactional reducer. The client document API in `app/lib/backend/database.ts` handles queries, pagination, batches, and polling subscriptions.
 
-### 1. Database Setup (Neon or Railway)
-
-**Neon (recommended):**
-```bash
-node scripts/setup-neon-vercel.mjs
-```
-Then follow prompts to add Neon via Vercel. `POSTGRES_URL` is auto-injected.
-
-**Railway:**
-- Create Railway project, add PostgreSQL (includes pgvector)
-- Copy `DATABASE_URL` → add to Vercel env vars
-
-### 2. Dependencies
-```bash
-npm install @langchain/langgraph @langchain/openai @langchain/community @langchain/core pg
-```
-(Use `--legacy-peer-deps` if you hit zod peer dependency conflicts with jimp.)
-
-### 3. Schema (pgvector)
-```sql
--- Run once on Railway Postgres
-CREATE EXTENSION IF NOT EXISTS vector;
-
-CREATE TABLE recipe_embeddings (
-  id SERIAL PRIMARY KEY,
-  query_text TEXT NOT NULL,
-  embedding vector(1536),
-  recipe_data JSONB NOT NULL,
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
-CREATE INDEX ON recipe_embeddings USING ivfflat (embedding vector_cosine_ops) WITH (lists = 100);
-```
-
-### 4. Cache Key Strategy
-- **Query text**: `recipeTitle + (recipeContent || '')` — normalized (lowercase, trimmed)
-- **Embedding**: `text-embedding-3-small` (1536 dims)
-- **Similarity threshold**: 0.92 (cosine) — tune based on false positives
-
-### 5. Integration Points
-- **`/api/generateRecipeDetails`**: Replace current flow with LangGraph pipeline
-- **`/api/chat`** (optional): When user asks for recipe, could call a shared “recipe generation” service that uses the cache
-
----
-
-## Files to Create/Modify
-
-| File | Action |
-|------|--------|
-| `lib/vectorStore.ts` | pgvector client + similarity search |
-| `lib/recipeGraph.ts` | LangGraph definition (check_cache → generate → store) |
-| `app/api/generateRecipeDetails/route.ts` | Use graph instead of direct OpenAI |
-| `scripts/init-pgvector.sql` | Schema for Railway |
-
----
-
-## Cost / Latency Impact
-
-| Scenario | Before | After |
-|----------|--------|-------|
-| **Cache hit** | 5+ API calls, ~3–5s | 0 API calls, ~100–200ms |
-| **Cache miss** | 5+ API calls | Same, but result is cached |
-| **Repeated queries** (e.g. "chicken stir fry") | Full cost every time | First: full cost; subsequent: near-free |
-
----
-
-## Notes
-- **ChromaDB** is fine if you prefer a simpler local dev setup (no Postgres); you can run it in Docker. For production on Railway, pgvector is the smoother path.
-- **Caching granularity**: You could also cache at the "enrichment" level (e.g. cache `classifyRecipe` results for similar recipe text) for additional savings.
-- **Eviction**: Consider TTL or max rows if the table grows large; pgvector scales well but you may want to prune old entries.
+PostgreSQL holds embeddings and metadata. Local images are ordinary files under `.local/uploads`, served by same-origin API routes. Local HMAC sessions identify the single developer account. See [local development](LOCAL_DEVELOPMENT.md) and [security](../SECURITY.md) for the runtime and trust boundary.

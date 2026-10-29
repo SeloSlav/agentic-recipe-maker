@@ -4,7 +4,7 @@ import React, { useRef, useEffect, useState, useCallback } from "react";
 import dynamic from "next/dynamic";
 import { useAuth } from "../context/AuthContext";
 import { useEffectivePlan } from "../context/PlanDebugContext";
-import { auth } from "../firebase/firebase";
+import { auth } from "../lib/backend/client";
 
 const ChatWindow = dynamic(() => import("./ChatWindow").then((m) => m.ChatWindow), { ssr: false });
 const ChatSidebar = dynamic(() => import("./ChatSidebar").then((m) => m.ChatSidebar), { ssr: false });
@@ -12,7 +12,7 @@ const ChatSidebar = dynamic(() => import("./ChatSidebar").then((m) => m.ChatSide
 async function fetchWithAuth(url: string, options: RequestInit = {}) {
   const user = auth?.currentUser;
   if (!user) throw new Error("Not authenticated");
-  const token = await user.getIdToken();
+  const token = await user.getSessionToken();
   return fetch(url, {
     ...options,
     headers: { ...(options.headers || {}), Authorization: `Bearer ${token}` },
@@ -114,4 +114,4 @@ export const HomeClient = () => {
       </div>
     </div>
   );
-}; 
+};

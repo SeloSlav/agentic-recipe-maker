@@ -1,6 +1,6 @@
 import React from 'react';
 import { TransactionRow } from '../../components/SpoonHistoryMenu';
-import { Timestamp } from 'firebase/firestore';
+import { Timestamp } from '../../lib/backend/database';
 
 interface PointTransaction {
   actionType: string;
@@ -38,4 +38,4 @@ export const PointsHistory: React.FC<PointsHistoryProps> = ({ transactions }) =>
       </div>
     </div>
   );
-}; 
+};

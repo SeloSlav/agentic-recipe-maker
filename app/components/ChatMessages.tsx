@@ -19,7 +19,7 @@ function isUserReadyToGenerate(userContent: string): boolean {
     return confirmPhrases.some((p) => lower.includes(p) || lower === p);
 }
 import { faUtensils, faFaceSmile, faHeart, faLeaf, faClock, faCalendarDays, faSun } from "@fortawesome/free-solid-svg-icons";
-import { getAuth } from "firebase/auth"; // Import Firebase auth to get current user
+import { getAuth, onAuthStateChanged } from "../lib/backend/auth";
 import { LoadingSpinner } from "./LoadingSpinner";
 import { MessageRenderer } from "./MessageRenderer";
 import { Message, RecipeClassification } from "./types";
@@ -63,18 +63,18 @@ const formatDishPairings = async (text: string): Promise<string> => {
         });
 
         if (!response.ok) throw new Error('Failed to extract food items');
-        
+
         const data = await response.json();
-        
+
         // Check if items exists in the response
         if (!data || !Array.isArray(data.items)) {
             console.warn('Invalid response format from API:', data);
             return text;
         }
-        
+
         // Sort items by length (longest first) to handle overlapping matches
         const sortedItems = data.items.sort((a, b) => b.length - a.length);
-        
+
         // Replace each food item with its bold version, using word boundaries
         let formattedText = text;
         sortedItems.forEach(item => {
@@ -83,7 +83,7 @@ const formatDishPairings = async (text: string): Promise<string> => {
                 formattedText = formattedText.replace(regex, `**${item}**`);
             }
         });
-        
+
         return formattedText;
     } catch (error) {
         console.error('Error formatting dish pairings:', error);
@@ -122,7 +122,7 @@ export const ChatMessages: React.FC<ChatMessagesProps> = ({
 
     useEffect(() => {
         const auth = getAuth();
-        const unsubscribe = auth.onAuthStateChanged(user => {
+        const unsubscribe = onAuthStateChanged(auth, user => {
              if (user) {
                 setUserId(user.uid);
              } else {
@@ -151,7 +151,7 @@ export const ChatMessages: React.FC<ChatMessagesProps> = ({
 
         let idToken;
         try {
-            idToken = await currentUser.getIdToken(true);
+            idToken = await currentUser.getSessionToken();
         } catch (error) {
             console.error("Error getting ID token:", error);
             onAssistantResponse("Sorry, couldn't verify your session. Please try logging in again.");
@@ -162,12 +162,12 @@ export const ChatMessages: React.FC<ChatMessagesProps> = ({
         try {
             const { title } = parseRecipe(msg);
             // Use the verified UID from currentUser
-            const docId = currentUser.uid + "-" + Date.now(); 
+            const docId = currentUser.uid + "-" + Date.now();
             const recipeHash = createRecipeHash(msg); // Keep using msg for hash if needed
 
             const response = await fetch("/api/saveRecipe", {
                 method: "POST",
-                headers: { 
+                headers: {
                     "Content-Type": "application/json",
                     // Add the Authorization header
                     "Authorization": `Bearer ${idToken}`
@@ -189,11 +189,11 @@ export const ChatMessages: React.FC<ChatMessagesProps> = ({
                 const pointsResult = await SpoonPointSystem.awardPoints(
                     currentUser.uid, // Use verified UID
                     'SAVE_RECIPE',
-                    docId 
+                    docId
                 );
 
                 let message = `Your <a href="/recipe/${docId}" target="_blank" rel="noopener noreferrer" class="underline text-amber-600 hover:text-amber-700"> ${title}</a> recipe has been tucked away in the kitchen vault, ready for use!`;
-                
+
                 if (pointsResult.success) {
                     showPointsToast(pointsResult.points!, 'Recipe saved successfully!');
                     message += ` You earned ${pointsResult.points} spoons! 🥄✨ Click your recipe to add mouthwatering photos, discover perfect pairings, and unlock more rewards!`;
@@ -330,7 +330,7 @@ export const ChatMessages: React.FC<ChatMessagesProps> = ({
 
     useEffect(() => {
         messages.forEach((msg, index) => {
-            if (msg.role === "assistant" && 
+            if (msg.role === "assistant" &&
                 typeof msg.content === "string" &&
                 (msg.content.includes("pairing") || msg.content.includes("complement")) &&
                 !formattedPairings[index]) {

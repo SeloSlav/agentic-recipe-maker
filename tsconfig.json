@@ -1,5 +1,11 @@
 {
   "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "local-data-request": [
+        "app/lib/backend/request.ts"
+      ]
+    },
     "target": "ES2017",
     "lib": [
       "dom",
@@ -16,23 +22,25 @@
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "jsx": "preserve", // Changed from "preserve" to "react-jsx" for better React 17+ compatibility
+    "jsx": "preserve",
     "plugins": [
       {
         "name": "next"
       }
     ],
-    "allowSyntheticDefaultImports": true, // Added for compatibility with CommonJS modules
-    "forceConsistentCasingInFileNames": true // Enforces consistent file naming
+    "allowSyntheticDefaultImports": true,
+    "forceConsistentCasingInFileNames": true
   },
   "include": [
     "next-env.d.ts",
     ".next/types/**/*.ts",
-    "types/**/*.d.ts",
     "**/*.ts",
     "**/*.tsx"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "spacetimedb",
+    "scraping",
+    ".local"
   ]
 }

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { collection, getDocs, doc, updateDoc, deleteDoc, addDoc } from 'firebase/firestore';
-import { db } from '../../firebase/firebase';
+import { collection, getDocs, doc, updateDoc, deleteDoc, addDoc } from '../../lib/backend/database';
+import { db } from "../../lib/backend/client";
 import { LoadingSpinner } from '../../components/LoadingSpinner';
 import { Goodie } from '../../marketplace/types';
 import { isAdmin } from '../../config/admin';
@@ -66,20 +66,20 @@ const MarketplaceManager: React.FC<MarketplaceManagerProps> = ({ user, showPoint
         if (!user) return;
         const adminCheck = await isAdmin(user.uid);
         if (!adminCheck) return;
-        
+
         try {
             setLoading(true);
             const goodieRef = doc(db, 'goodies', goodie.docId);
-            
+
             // Remove docId before updating
             const { docId, ...updateData } = goodie;
             await updateDoc(goodieRef, updateData);
 
             // Update local state
-            setGoodies(prev => prev.map(g => 
+            setGoodies(prev => prev.map(g =>
                 g.docId === goodie.docId ? goodie : g
             ));
-            
+
             showPointsToast(0, `Updated ${goodie.name} successfully!`);
             setEditingGoodie(null);
         } catch (error) {
@@ -94,7 +94,7 @@ const MarketplaceManager: React.FC<MarketplaceManagerProps> = ({ user, showPoint
         if (!user) return;
         const adminCheck = await isAdmin(user.uid);
         if (!adminCheck) return;
-        
+
         if (!confirm('Are you sure you want to delete this item?')) return;
 
         try {
@@ -114,20 +114,20 @@ const MarketplaceManager: React.FC<MarketplaceManagerProps> = ({ user, showPoint
         if (!user) return;
         const adminCheck = await isAdmin(user.uid);
         if (!adminCheck) return;
-        
+
         try {
             setLoading(true);
             // Remove docId before creating
             const { docId, ...createData } = goodie;
-            
-            // Add to Firestore
+
+            // Add to database
             const goodiesCollection = collection(db, 'goodies');
             const docRef = await addDoc(goodiesCollection, createData);
-            
+
             // Add to local state with the new docId
             const newGoodie = { ...goodie, docId: docRef.id };
             setGoodies(prev => [...prev, newGoodie]);
-            
+
             showPointsToast(0, `Created ${goodie.name} successfully!`);
             setEditingGoodie(null);
         } catch (error) {
@@ -159,7 +159,7 @@ const MarketplaceManager: React.FC<MarketplaceManagerProps> = ({ user, showPoint
             }
 
             const data = await response.json();
-            
+
             // Update the form with AI suggestions while keeping the category and rarity
             setEditingGoodie(prev => ({
                 ...prev!,
@@ -533,7 +533,7 @@ const MarketplaceManager: React.FC<MarketplaceManagerProps> = ({ user, showPoint
                                     min="0"
                                 />
                             </div>
-                            
+
                             {/* Hidden field */}
                             <div className="flex items-center">
                                 <input

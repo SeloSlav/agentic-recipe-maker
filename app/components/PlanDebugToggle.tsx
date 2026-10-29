@@ -29,6 +29,12 @@ export function PlanDebugToggle() {
     >
       <span className="text-gray-400">Simulate:</span>
       <button
+        onClick={() => setPlanOverride("actual")}
+        className={`px-2 py-1 rounded transition-colors ${planOverride === "actual" ? "bg-amber-600 text-white" : "hover:bg-gray-700"}`}
+      >
+        Actual
+      </button>
+      <button
         onClick={() => setPlanOverride("logged_out")}
         className={`px-2 py-1 rounded transition-colors ${
           planOverride === "logged_out" ? "bg-amber-600 text-white" : "hover:bg-gray-700"

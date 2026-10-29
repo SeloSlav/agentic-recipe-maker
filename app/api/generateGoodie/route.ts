@@ -1,9 +1,10 @@
+import { lazyOpenAI } from '../../lib/openai-client';
 import { NextResponse } from 'next/server';
 import OpenAI from 'openai';
-import { collection, getDocs, query, where } from 'firebase/firestore';
-import { db } from '../../firebase/firebase';
+import { collection, getDocs, query, where } from '../../lib/backend/database';
+import { db } from "../../lib/backend/client";
 
-const openai = new OpenAI({
+const openai = lazyOpenAI({
     apiKey: process.env.OPENAI_API_KEY,
 });
 
@@ -42,7 +43,7 @@ Cost: ${data.cost} spoons
         }).join('\n');
 
         // Add some examples of same rarity if we don't have enough category examples
-        const rarityExamples = similarItems.docs.length < 2 ? 
+        const rarityExamples = similarItems.docs.length < 2 ?
             rarityItems.docs
                 .filter(doc => doc.data().category !== category)
                 .slice(0, 2)
@@ -137,4 +138,4 @@ Please provide the item details in the following JSON format:
             { status: 500 }
         );
     }
-} 
+}

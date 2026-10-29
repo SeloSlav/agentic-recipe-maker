@@ -1,7 +1,7 @@
 import React, { useMemo, useRef } from 'react';
 import { UserInventoryItem, Rarity } from '../types';
 import Image from 'next/image';
-import { Timestamp } from 'firebase/firestore';
+import { Timestamp } from '../../lib/backend/database';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons';
 
@@ -29,11 +29,11 @@ export const UserInventory: React.FC<UserInventoryProps> = ({ items }) => {
 
     const sortedItems = useMemo(() => {
         return [...items].sort((a, b) => {
-            const dateA = a.purchasedAt instanceof Timestamp ? 
-                a.purchasedAt.toDate().getTime() : 
+            const dateA = a.purchasedAt instanceof Timestamp ?
+                a.purchasedAt.toDate().getTime() :
                 a.purchasedAt.getTime();
-            const dateB = b.purchasedAt instanceof Timestamp ? 
-                b.purchasedAt.toDate().getTime() : 
+            const dateB = b.purchasedAt instanceof Timestamp ?
+                b.purchasedAt.toDate().getTime() :
                 b.purchasedAt.getTime();
             return dateB - dateA;
         });
@@ -80,17 +80,17 @@ export const UserInventory: React.FC<UserInventoryProps> = ({ items }) => {
                 </button>
 
                 <div className="bg-white rounded-3xl border border-gray-300 p-6">
-                    <div 
+                    <div
                         ref={scrollContainerRef}
                         className="flex overflow-x-auto pb-4 custom-scrollbar gap-4 snap-x snap-mandatory"
                     >
                         {sortedItems.map((item) => {
-                            const purchaseDate = item.purchasedAt instanceof Timestamp ? 
-                                item.purchasedAt.toDate() : 
+                            const purchaseDate = item.purchasedAt instanceof Timestamp ?
+                                item.purchasedAt.toDate() :
                                 item.purchasedAt;
-                            
+
                             return (
-                                <div 
+                                <div
                                     key={`${item.id}-${purchaseDate.getTime()}`}
                                     className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow flex-shrink-0 w-[280px] snap-start"
                                 >
@@ -137,4 +137,4 @@ export const UserInventory: React.FC<UserInventoryProps> = ({ items }) => {
             </div>
         </div>
     );
-}; 
+};

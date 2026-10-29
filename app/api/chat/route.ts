@@ -1,23 +1,23 @@
 import { NextResponse } from 'next/server';
 import { awardPointsServer } from '../../lib/spoonPointsServer';
-import { admin } from '../../firebase/firebaseAdmin';
+import { serverDb, serverAuth } from "../../lib/backend/admin";
 import { queryCorpus } from '../../lib/stores/balkanCorpusStore';
 import { resolveRecipeLinks } from '../../lib/resolvePairingLinks';
 
 // Add timer detection helper
 const isTimerRequest = (text: string): { isTimer: boolean; seconds: number } => {
     const lowerText = text.toLowerCase().trim();
-    
+
     // Common timer keywords that might appear in the request
     const timerKeywords = [
         'timer', 'countdown', 'remind me in', 'set timer', 'set a timer',
         'set alarm', 'wake me up in', 'alert me in', 'notify me in'
     ];
-    
+
     // First, check if any timer keywords are present
     const hasTimerKeyword = timerKeywords.some(keyword => lowerText.includes(keyword));
     if (!hasTimerKeyword) return { isTimer: false, seconds: 0 };
-    
+
     // Complex time patterns
     const timePatterns: { pattern: RegExp; handler: (match: RegExpMatchArray) => number }[] = [
         // Hours and minutes patterns
@@ -33,7 +33,7 @@ const isTimerRequest = (text: string): { isTimer: boolean; seconds: number } => 
             pattern: /(\d+):(\d+)(?::(\d+))?/,
             handler: (match) => (parseInt(match[1]) * 3600) + (parseInt(match[2]) * 60) + (parseInt(match[3] || '0'))
         },
-        
+
         // Hours only patterns
         {
             pattern: /(\d+)\s*hours?/i,
@@ -43,25 +43,25 @@ const isTimerRequest = (text: string): { isTimer: boolean; seconds: number } => 
             pattern: /(\d+)\s*hrs?/i,
             handler: (match) => parseInt(match[1]) * 3600
         },
-        
+
         // Minutes and seconds patterns
         {
             pattern: /(\d+)\s*min(?:ute)?s?\s*(?:and\s*)?(\d+)\s*sec(?:ond)?s?/i,
             handler: (match) => (parseInt(match[1]) * 60) + parseInt(match[2])
         },
-        
+
         // Minutes only patterns
         {
             pattern: /(\d+)\s*min(?:ute)?s?/i,
             handler: (match) => parseInt(match[1]) * 60
         },
-        
+
         // Seconds only patterns
         {
             pattern: /(\d+)\s*sec(?:ond)?s?/i,
             handler: (match) => parseInt(match[1])
         },
-        
+
         // Bare number with timer keyword (assume minutes)
         {
             pattern: /(?:timer for|set timer for|countdown for|remind me in)\s*(\d+)(?!\s*(?:sec|hr|hour|minute|min))/i,
@@ -73,36 +73,30 @@ const isTimerRequest = (text: string): { isTimer: boolean; seconds: number } => 
         const match = lowerText.match(pattern);
         if (match) {
             const seconds = handler(match);
-            
+
             // Ensure the time is reasonable (between 5 seconds and 2 hours)
             if (seconds >= 5 && seconds <= 7200) {
                 return { isTimer: true, seconds };
             }
         }
     }
-    
+
     return { isTimer: false, seconds: 0 };
 };
 
-// Helper function to store user prompts in Firebase (uses Admin SDK to bypass rules on server)
+// Store authenticated prompts through the server's private document connection.
 const storeUserPrompt = async (userId: string, message: string, conversationHistory: unknown[]): Promise<void> => {
   if (!userId || userId === 'anonymous') return;
   try {
-    const adminDb = admin.firestore();
+    const adminDb = serverDb;
     await adminDb.collection('prompts').add({
       userId,
       message,
       conversationHistory,
-      timestamp: admin.firestore.FieldValue.serverTimestamp(),
+      timestamp: serverDb.transforms.serverTimestamp(),
     });
   } catch (error: unknown) {
-    const err = error as { code?: number | string };
-    // Check specifically for Firestore permission errors
-    if (err.code === 7 || err.code === 'permission-denied') {
-        console.error('Firestore Permission Error storing user prompt:', error);
-    } else {
-        console.error('Error storing user prompt:', error);
-    }
+    console.error('Error storing user prompt:', error);
   }
 };
 
@@ -113,7 +107,7 @@ export async function POST(req: Request) {
       const authorization = req.headers.get('authorization');
       if (authorization?.startsWith('Bearer ')) {
           const idToken = authorization.split('Bearer ')[1];
-          const decodedToken = await admin.auth().verifyIdToken(idToken);
+          const decodedToken = await serverAuth.verifyToken(idToken);
           verifiedUserId = decodedToken.uid;
           userIsAuthenticated = true;
       }
@@ -178,7 +172,7 @@ export async function POST(req: Request) {
     randomizationHint = `\n\nRANDOMIZATION (MUST FOLLOW): For this specific request, pick a recipe from ${cuisine} cuisine—e.g. ${examples}. Do not default to Garlic Spaghetti or similar; vary your suggestions.`;
   }
 
-  // Store user message in Firebase if it's from a user (and user is authenticated)
+  // Store user message in local backend if it's from a user (and user is authenticated)
   if (lastMessage.role === "user" && userIsAuthenticated) {
     storeUserPrompt(verifiedUserId, lastMessage.content, messages.slice(0, -1));
   }
@@ -188,8 +182,8 @@ export async function POST(req: Request) {
   let isProUser = false;
   if (userIsAuthenticated && lastMessage.role === "user") {
     try {
-      const userDoc = await admin.firestore().collection("users").doc(verifiedUserId).get();
-      const adminDoc = await admin.firestore().collection("admins").doc(verifiedUserId).get();
+      const userDoc = await serverDb.collection("users").doc(verifiedUserId).get();
+      const adminDoc = await serverDb.collection("admins").doc(verifiedUserId).get();
       isProUser = userDoc.data()?.plan === "pro" || (adminDoc.exists && adminDoc.data()?.active === true);
       if (isProUser) {
         const { getRelevantMemory } = await import("../../lib/stores/conversationMemoryStore");
@@ -202,7 +196,7 @@ export async function POST(req: Request) {
       console.error("Conversation memory retrieval error:", e);
     }
   }
-  
+
   // Check if it's a timer request from the user
   if (lastMessage.role === "user") {
     const timerCheck = isTimerRequest(lastMessage.content);
@@ -233,7 +227,7 @@ You have multiple modes of response:
    - The recipe name must be descriptive of the actual dish (e.g., "Classic Beef Bourguignon", "Spicy Thai Basil Chicken", "Coq au Vin").
    - Even if the request is conversational (e.g., "What should I cook for my date?", "I need comfort food"), still start with ONLY the recipe name—and pick something that fits the context, varying your suggestions.
    - After the recipe name, on a new line write "Ingredients".
-   - Under "Ingredients", list each ingredient on its own line, each preceded by "- " (e.g., "- 1 cup flour"). 
+   - Under "Ingredients", list each ingredient on its own line, each preceded by "- " (e.g., "- 1 cup flour").
    - On a new line after all the ingredients, write "Directions".
    - Under "Directions", list each direction step as a numbered list starting from "1. ", one step per line.
    - CRITICAL: Always classify the cuisine type accurately based on:
@@ -337,7 +331,7 @@ In summary:
   - Only produce the detailed recipe structure if the user explicitly asks for a recipe.
   - If not a recipe request, respond in a non-recipe format.
   - If the request is about "Selo Olive Oil," include a descriptive paragraph followed by a well-organized list of benefits.
-  - If the user has specified a preferred cooking oil or dietary preferences/restrictions, always prioritize and fully accommodate 
+  - If the user has specified a preferred cooking oil or dietary preferences/restrictions, always prioritize and fully accommodate
   them in any response, regardless of standard guidelines or defaults.
 
 Extras:

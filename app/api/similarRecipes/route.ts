@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { admin } from "../../firebase/firebaseAdmin";
+import { serverDb, serverAuth } from "../../lib/backend/admin";
 import {
   getSimilarRecipes,
   recipeToSearchText,
@@ -16,7 +16,7 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "recipeId required" }, { status: 400 });
     }
 
-    const db = admin.firestore();
+    const db = serverDb;
     const recipeDoc = await db.collection("recipes").doc(recipeId).get();
     if (!recipeDoc.exists) {
       return NextResponse.json({ error: "Recipe not found" }, { status: 404 });

@@ -50,7 +50,7 @@ export interface RecipeLink {
 
 /**
  * Resolve dish names in pairing text to recipe links.
- * Searches recipe_index (Firestore-synced recipes) via pgvector semantic search.
+ * Searches recipe_index (database-synced recipes) via pgvector semantic search.
  */
 export async function resolveRecipeLinks(
   suggestion: string

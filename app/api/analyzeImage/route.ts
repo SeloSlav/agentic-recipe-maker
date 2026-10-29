@@ -1,8 +1,9 @@
+import { lazyOpenAI } from '../../lib/openai-client';
 import OpenAI from 'openai';
 import { NextResponse } from 'next/server';
 import sharp from 'sharp';
 
-const openai = new OpenAI({
+const openai = lazyOpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
@@ -30,7 +31,7 @@ export async function POST(request: Request) {
     // Convert File to Buffer
     const bytes = await image.arrayBuffer();
     const buffer = Buffer.from(bytes);
-    
+
     console.log('Original image buffer size:', buffer.length);
 
     // Get image metadata before processing
@@ -84,7 +85,7 @@ export async function POST(request: Request) {
     const base64Image = processedImageBuffer.toString('base64');
     console.log('Base64 string length:', base64Image.length);
     console.log('First 100 chars of base64:', base64Image.substring(0, 100));
-    
+
     if (!process.env.OPENAI_API_KEY) {
       console.error('OpenAI API key is not configured');
       return NextResponse.json(
@@ -188,11 +189,11 @@ CRITICAL REMINDER FOR RECIPES:
     console.error('Error processing image:', error);
     // Return more specific error message
     return NextResponse.json(
-      { 
+      {
         error: 'Failed to process image',
         details: error instanceof Error ? error.message : 'Unknown error'
       },
       { status: 500 }
     );
   }
-} 
+}

@@ -15,6 +15,7 @@
 
 # next.js
 /.next/
+/.next-*/
 /out/
 
 # production
@@ -30,6 +31,7 @@
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+*.log
 
 # env files (can opt-in for committing if needed)
 .env*
@@ -40,7 +42,19 @@ scraping/
 # vercel
 .vercel
 
+# Local editor and OS files
+.vscode/
+.idea/
+Thumbs.db
+*.zip
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
 .env*.local
+
+# Local databases, developer sessions, uploads, and generated module output
+/.local/
+/spacetimedb/node_modules/
+/spacetimedb/dist/
+!.env.example

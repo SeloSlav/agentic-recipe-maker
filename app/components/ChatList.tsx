@@ -24,9 +24,9 @@ interface ChatListProps {
   refreshKey?: number; // Increment to force refresh
 }
 
-async function fetchWithAuth(url: string, user: { getIdToken: () => Promise<string> } | null, options: RequestInit = {}) {
+async function fetchWithAuth(url: string, user: { getSessionToken: () => Promise<string> } | null, options: RequestInit = {}) {
   if (!user) throw new Error("Not authenticated");
-  const token = await user.getIdToken();
+  const token = await user.getSessionToken();
   return fetch(url, {
     ...options,
     headers: {

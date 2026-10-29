@@ -7,11 +7,11 @@ import 'chartjs-adapter-date-fns';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSpoon, faChevronDown, faChevronUp, faLightbulb, faTrophy, faGear, faInfoCircle, faXmark, faStar } from '@fortawesome/free-solid-svg-icons';
 import { useAuth } from '../context/AuthContext';
-import { doc, getDoc, setDoc, collection, getDocs, query, orderBy, limit } from 'firebase/firestore';
-import { db } from '../firebase/firebase';
+import { doc, getDoc, setDoc, collection, getDocs, query, orderBy, limit } from '../lib/backend/database';
+import { db } from "../lib/backend/client";
 import Link from 'next/link';
 import { format } from 'date-fns';
-import { Timestamp } from 'firebase/firestore';
+import { Timestamp } from '../lib/backend/database';
 import { POINT_ACTIONS } from '../lib/spoonPoints';
 import { PointsHistory } from './components/PointsHistory';
 import { usePoints } from '../context/PointsContext';
@@ -312,4 +312,4 @@ const SpoonStats = () => {
   );
 };
 
-export default SpoonStats; 
+export default SpoonStats;

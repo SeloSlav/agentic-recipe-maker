@@ -1,6 +1,6 @@
 import { ImageResponse } from 'next/og';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '../../firebase/firebase';
+import { doc, getDoc } from '../../lib/backend/database';
+import { db } from "../../lib/backend/client";
 
 export const runtime = 'edge';
 export const alt = 'Recipe Image';
@@ -64,4 +64,4 @@ export default async function Image({
       )
     );
   }
-} 
+}

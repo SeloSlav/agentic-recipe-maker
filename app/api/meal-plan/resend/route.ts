@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { admin } from '../../../firebase/firebaseAdmin';
+import { serverDb, serverAuth } from "../../../lib/backend/admin";
 import { Resend } from 'resend';
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
@@ -17,10 +17,10 @@ export async function POST(req: Request) {
     }
 
     const idToken = authHeader.split('Bearer ')[1];
-    const decoded = await admin.auth().verifyIdToken(idToken);
+    const decoded = await serverAuth.verifyToken(idToken);
     const userId = decoded.uid;
 
-    const userDoc = await admin.firestore().collection('users').doc(userId).get();
+    const userDoc = await serverDb.collection('users').doc(userId).get();
     const userData = userDoc.data();
     const email = decoded.email || userData?.email;
 
@@ -34,7 +34,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'planId required' }, { status: 400 });
     }
 
-    const planRef = admin.firestore().collection('users').doc(userId).collection('mealPlanHistory').doc(planId);
+    const planRef = serverDb.collection('users').doc(userId).collection('mealPlanHistory').doc(planId);
     const planSnap = await planRef.get();
     if (!planSnap.exists) {
       return NextResponse.json({ error: 'Plan not found' }, { status: 404 });

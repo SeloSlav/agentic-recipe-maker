@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { admin } from '../../firebase/firebaseAdmin';
+import { serverDb, serverAuth } from "../../lib/backend/admin";
 import { generateMealPlan } from '../../lib/meal-plan/mealPlanGenerator';
 
 export async function POST(req: Request) {
@@ -10,10 +10,10 @@ export async function POST(req: Request) {
     }
 
     const idToken = authHeader.split('Bearer ')[1];
-    const decoded = await admin.auth().verifyIdToken(idToken);
+    const decoded = await serverAuth.verifyToken(idToken);
     const userId = decoded.uid;
 
-    const userDoc = await admin.firestore().collection('users').doc(userId).get();
+    const userDoc = await serverDb.collection('users').doc(userId).get();
     const userData = userDoc.data();
 
     const body = await req.json().catch(() => ({}));

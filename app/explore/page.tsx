@@ -3,9 +3,9 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { db } from '../firebase/firebase';
+import { db } from "../lib/backend/client";
 import { SidebarLayout } from '../components/SidebarLayout';
-import { collection, query, orderBy, getDocs, getCountFromServer, doc, updateDoc, arrayUnion, Timestamp, increment, getDoc, startAfter, limit, where } from 'firebase/firestore';
+import { collection, query, orderBy, getDocs, getCountFromServer, doc, updateDoc, arrayUnion, Timestamp, increment, getDoc, startAfter, limit, where } from '../lib/backend/database';
 import { useAuth } from '../context/AuthContext';
 import { usePoints } from '../context/PointsContext';
 import { Recipe } from '../recipe/types';
@@ -16,7 +16,7 @@ import { getExploreFilterUrl } from '../components/FilterTag';
 
 const POINTS_FOR_LIKE = 50; // Points awarded when someone likes your recipe
 
-// Add type for Firestore document data
+// Add type for database document data
 interface RecipeDocument {
   recipeTitle: string;
   recipeContent: string;
@@ -158,7 +158,7 @@ export default function ExplorePage() {
   };
 
   const isRecipeComplete = (recipe: Recipe) => {
-    return recipe.recipeSummary && 
+    return recipe.recipeSummary &&
            recipe.imageURL; // Simplified conditions to just require summary and image
   };
 
@@ -210,7 +210,7 @@ export default function ExplorePage() {
 
       // Get usernames for all recipes
       const userIds = new Set(fetchedRecipes.map(recipe => recipe.userId).filter(Boolean));
-      
+
       let userMap = new Map();
       if (userIds.size > 0) {
         const usersQuery = query(
@@ -334,7 +334,7 @@ export default function ExplorePage() {
       const recipeRef = doc(db, "recipes", recipe.id);
       const currentLikes = recipe.likes || [];
       const hasLiked = currentLikes.includes(user.uid);
-      
+
       // If already liked, do nothing
       if (hasLiked) {
         return;
@@ -344,8 +344,8 @@ export default function ExplorePage() {
       await updateDoc(recipeRef, {
         likes: arrayUnion(user.uid)
       });
-      setRecipes(prev => prev.map(r => 
-        r.id === recipe.id 
+      setRecipes(prev => prev.map(r =>
+        r.id === recipe.id
           ? { ...r, likes: [...(r.likes || []), user.uid] }
           : r
       ));
@@ -376,7 +376,7 @@ export default function ExplorePage() {
     }
   };
 
-  /** Fetch recipes using Firestore where clauses - matches filter counts, no 150 limit */
+  /** Fetch recipes using database where clauses - matches filter counts, no 150 limit */
   const fetchFilteredRecipes = useCallback(async (filters: typeof activeFilters) => {
     setIsSearching(true);
     try {
@@ -501,7 +501,7 @@ export default function ExplorePage() {
     }
   }, []);
 
-  // Debounced search effect - use Firestore query for URL filters (matches counts), text search otherwise
+  // Debounced search effect - use database query for URL filters (matches counts), text search otherwise
   useEffect(() => {
     const timer = setTimeout(() => {
       if (!searchTerm.trim()) {
@@ -550,8 +550,8 @@ export default function ExplorePage() {
       <div className="sticky top-0 bg-amber-50/95 backdrop-blur-sm z-10 py-4 -mx-4 px-4 shadow-sm border-b border-amber-100">
         <div className="max-w-7xl mx-auto">
           <h1 className="text-3xl font-bold mb-4">Explore Recipes</h1>
-          <SearchBar 
-            searchTerm={searchTerm} 
+          <SearchBar
+            searchTerm={searchTerm}
             setSearchTerm={setSearchTerm}
             isLoading={isSearching}
             isPageLoading={isPageLoading}
@@ -675,8 +675,8 @@ export default function ExplorePage() {
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {displayedRecipes.map((recipe, index) => (
-                <RecipeCard 
-                  key={recipe.id} 
+                <RecipeCard
+                  key={recipe.id}
                   recipe={recipe}
                   onLike={handleLike}
                   currentUser={user}
@@ -691,8 +691,8 @@ export default function ExplorePage() {
 
             {/* Infinite scroll trigger */}
             {!searchTerm && hasMore && (
-              <div 
-                ref={loadMoreRef} 
+              <div
+                ref={loadMoreRef}
                 className="h-20 flex items-center justify-center mt-8"
                 style={{ minHeight: '100px' }}
               >
@@ -713,4 +713,4 @@ export default function ExplorePage() {
     </div>
     </SidebarLayout>
   );
-} 
+}

@@ -1,7 +1,8 @@
+import { lazyOpenAI } from '../../lib/openai-client';
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
 
-const openai = new OpenAI({
+const openai = lazyOpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
@@ -68,4 +69,4 @@ Example bad titles:
       { status: 500 }
     );
   }
-} 
+}

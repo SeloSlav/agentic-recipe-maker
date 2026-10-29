@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useAuth } from '../context/AuthContext';
 import { usePoints } from '../context/PointsContext';
 import { LoadingSpinner } from '../components/LoadingSpinner';
@@ -22,13 +23,13 @@ interface CollapsibleSectionProps {
 
 const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({ title, isOpen, onToggle, children }) => (
     <div className="bg-white rounded-3xl shadow-lg border border-gray-300 overflow-hidden mb-8">
-        <button 
+        <button
             onClick={onToggle}
             className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-100 transition-colors"
         >
             <h2 className="text-lg font-medium text-[#5d5d5d]">{title}</h2>
-            <FontAwesomeIcon 
-                icon={isOpen ? faChevronDown : faChevronRight} 
+            <FontAwesomeIcon
+                icon={isOpen ? faChevronDown : faChevronRight}
                 className={`text-[#5d5d5d] transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
             />
         </button>
@@ -83,14 +84,14 @@ export default function AdminPage() {
             try {
                 const adminCheck = await isAdmin(user.uid);
                 console.log('Admin check result:', adminCheck);
-                
+
                 if (!adminCheck) {
                     console.log('User is not admin');
                     console.log('Your UID:', user.uid);
                     showPointsToast(0, "Access denied: Admin privileges required");
                     router.push('/');
                 }
-                
+
                 setInitializing(false);
                 setIsUserAdmin(adminCheck);
             } catch (error) {
@@ -117,34 +118,38 @@ export default function AdminPage() {
     }
 
     // If not user or not admin, don't render anything
-    if (!user) {
+    if (!user || !isUserAdmin) {
         return null;
     }
 
     return (
         <div className="max-w-7xl mx-auto px-4 py-8">
             <h1 className="text-3xl font-bold mb-8">Admin Dashboard</h1>
-            
+            <Link href="/admin/ai" className="block mb-8 rounded-3xl border border-amber-200 bg-amber-50 p-6 hover:bg-amber-100 transition-colors">
+                <h2 className="text-xl font-semibold text-amber-950">AI architecture &rarr;</h2>
+                <p className="mt-2 text-amber-900">Explore the LangGraph chat and recipe flows, LangChain tools, models, and backend status.</p>
+            </Link>
+
             <DatabaseMigrations user={user} showPointsToast={showPointsToast} />
 
-            <CollapsibleSection 
-                title="Recipe Modernizer" 
+            <CollapsibleSection
+                title="Recipe Modernizer"
                 isOpen={isRecipeModernizerOpen}
                 onToggle={() => setIsRecipeModernizerOpen(!isRecipeModernizerOpen)}
             >
                 <RecipeModernizer showPointsToast={showPointsToast} />
             </CollapsibleSection>
 
-            <CollapsibleSection 
-                title="Marketplace Management" 
+            <CollapsibleSection
+                title="Marketplace Management"
                 isOpen={isMarketplaceOpen}
                 onToggle={() => setIsMarketplaceOpen(!isMarketplaceOpen)}
             >
                 <MarketplaceManager user={user} showPointsToast={showPointsToast} />
             </CollapsibleSection>
 
-            <CollapsibleSection 
-                title="Points Management" 
+            <CollapsibleSection
+                title="Points Management"
                 isOpen={isPointsManagerOpen}
                 onToggle={() => setIsPointsManagerOpen(!isPointsManagerOpen)}
             >
@@ -153,4 +158,4 @@ export default function AdminPage() {
 
         </div>
     );
-} 
+}

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { collection, query, getDocs, doc, updateDoc, orderBy, limit, startAfter, where, deleteDoc } from 'firebase/firestore';
-import { db } from '../../firebase/firebase';
+import { collection, query, getDocs, doc, updateDoc, orderBy, limit, startAfter, where, deleteDoc } from '../../lib/backend/database';
+import { db } from "../../lib/backend/client";
 import { Recipe } from '../../recipe/types';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSync, faArrowRight, faArrowLeft, faFilter, faSearch, faSpinner } from '@fortawesome/free-solid-svg-icons';
@@ -119,7 +119,7 @@ const RecipeModernizer: React.FC<RecipeModernizerProps> = ({ showPointsToast }) 
     try {
       setLoading(true);
       setCurrentPage(page);
-      
+
       // Query for recipes that need modernization
       let recipesQuery = query(
         collection(db, 'recipes'),
@@ -132,7 +132,7 @@ const RecipeModernizer: React.FC<RecipeModernizerProps> = ({ showPointsToast }) 
       if (page > 1) {
         // We need to build up all snapshots until this page
         let lastDoc = pageSnapshots[pageSnapshots.length - 1];
-        
+
         // If we don't have the previous page's snapshot, we need to fetch all pages up to this one
         if (!lastDoc || page > pageSnapshots.length) {
           for (let i = pageSnapshots.length; i < page; i++) {
@@ -168,7 +168,7 @@ const RecipeModernizer: React.FC<RecipeModernizerProps> = ({ showPointsToast }) 
       }
 
       const recipeDocs = await getDocs(recipesQuery);
-      
+
       // Store the last document of this page if we haven't stored it yet
       if (page >= pageSnapshots.length) {
         const lastDoc = recipeDocs.docs[recipeDocs.docs.length - 1];
@@ -199,7 +199,7 @@ const RecipeModernizer: React.FC<RecipeModernizerProps> = ({ showPointsToast }) 
   const getPageNumbers = () => {
     const pageNumbers: (number | string)[] = [];
     const maxVisiblePages = 5;
-    
+
     if (totalPages <= maxVisiblePages) {
       // Show all pages if total pages is less than max visible
       for (let i = 1; i <= totalPages; i++) {
@@ -208,7 +208,7 @@ const RecipeModernizer: React.FC<RecipeModernizerProps> = ({ showPointsToast }) 
     } else {
       // Always show first page
       pageNumbers.push(1);
-      
+
       if (currentPage <= 3) {
         // Near the start
         pageNumbers.push(2, 3, 4, '...', totalPages);
@@ -220,7 +220,7 @@ const RecipeModernizer: React.FC<RecipeModernizerProps> = ({ showPointsToast }) 
         pageNumbers.push('...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages);
       }
     }
-    
+
     return pageNumbers;
   };
 
@@ -251,7 +251,7 @@ const RecipeModernizer: React.FC<RecipeModernizerProps> = ({ showPointsToast }) 
       case 'classification':
         return !!(recipe.ingredients?.length && recipe.directions?.length);
       case 'summary':
-        return !!(recipe.ingredients?.length && recipe.directions?.length && 
+        return !!(recipe.ingredients?.length && recipe.directions?.length &&
                   recipe.cookingTime && recipe.cuisineType && recipe.cookingDifficulty && recipe.diet);
       case 'nutrition':
         return !!(recipe.ingredients?.length && recipe.directions?.length);
@@ -350,14 +350,14 @@ const RecipeModernizer: React.FC<RecipeModernizerProps> = ({ showPointsToast }) 
           break;
       }
 
-      // Update the recipe in Firestore
+      // Update the recipe in database
       const recipeRef = doc(db, 'recipes', updatedRecipe.id);
       await updateDoc(recipeRef, updateData);
 
       // Update local state
       updatedRecipe = { ...updatedRecipe, ...updateData };
       setRecipes(prev => prev.map(r => r.id === updatedRecipe.id ? updatedRecipe : r));
-      
+
       showPointsToast(0, `Updated ${updatedRecipe.recipeTitle} with: ${updatedFields.join(', ')}`);
     } catch (error) {
       console.error('Error modernizing recipe:', error);
@@ -710,7 +710,7 @@ const RecipeModernizer: React.FC<RecipeModernizerProps> = ({ showPointsToast }) 
 
     // Process the first recipe that needs work
     const recipeToProcess = recipesToProcess[0];
-    
+
     // Add to processing set before starting
     const newProcessingSet = new Set(automation.processingRecipes);
     newProcessingSet.add(recipeToProcess.id);
@@ -763,7 +763,7 @@ const RecipeModernizer: React.FC<RecipeModernizerProps> = ({ showPointsToast }) 
   // Effect to run automation
   useEffect(() => {
     let timeoutId: NodeJS.Timeout;
-    
+
     if (automation.isRunning && !loading) {
       // Add a small delay between processing attempts to prevent rapid updates
       timeoutId = setTimeout(() => {
@@ -844,7 +844,7 @@ const RecipeModernizer: React.FC<RecipeModernizerProps> = ({ showPointsToast }) 
 
           {automation.isRunning && (
             <span className="hidden md:inline text-sm text-gray-600">
-              Processing {automation.currentColumn} 
+              Processing {automation.currentColumn}
               {automation.processingRecipes.size > 0 && ` (${automation.processingRecipes.size} active)`}
             </span>
           )}
@@ -858,7 +858,7 @@ const RecipeModernizer: React.FC<RecipeModernizerProps> = ({ showPointsToast }) 
             className="border rounded-lg p-3 flex flex-col md:flex-row items-start md:items-center gap-3 hover:bg-gray-50 transition-colors"
           >
             <div className="w-full md:w-[250px] flex-shrink-0">
-              <a 
+              <a
                 href={`/recipe/${recipe.id}`}
                 target="_blank"
                 rel="noopener noreferrer"
@@ -874,14 +874,14 @@ const RecipeModernizer: React.FC<RecipeModernizerProps> = ({ showPointsToast }) 
                 disabled={Object.values(modernizingStates).some(set => set.has(recipe.id))}
                 className={`px-2 py-1 text-xs rounded transition-colors ${
                   isModernizing('details', recipe.id)
-                    ? 'opacity-50 cursor-not-allowed bg-gray-100 text-gray-600' 
+                    ? 'opacity-50 cursor-not-allowed bg-gray-100 text-gray-600'
                     : (!recipe.ingredients?.length || !recipe.directions?.length)
                       ? 'bg-red-100 text-red-600 hover:bg-red-200 cursor-pointer hover:scale-105'
                       : 'bg-gray-100 text-gray-600 hover:bg-gray-200 cursor-pointer hover:scale-105'
                 }`}
               >
                 {isModernizing('details', recipe.id)
-                  ? 'Updating...' 
+                  ? 'Updating...'
                   : (!recipe.ingredients?.length || !recipe.directions?.length)
                     ? 'No Details'
                     : 'Try Details Again'}
@@ -894,14 +894,14 @@ const RecipeModernizer: React.FC<RecipeModernizerProps> = ({ showPointsToast }) 
                   !canProcessStep(recipe, 'classification')
                     ? 'opacity-50 cursor-not-allowed bg-gray-100 text-gray-600'
                     : isModernizing('classification', recipe.id)
-                      ? 'opacity-50 cursor-not-allowed bg-gray-100 text-gray-600' 
+                      ? 'opacity-50 cursor-not-allowed bg-gray-100 text-gray-600'
                       : (!recipe.cookingTime || !recipe.cuisineType || !recipe.cookingDifficulty || !recipe.diet)
                         ? 'bg-purple-100 text-purple-600 hover:bg-purple-200 cursor-pointer hover:scale-105'
                         : 'bg-gray-100 text-gray-600 hover:bg-gray-200 cursor-pointer hover:scale-105'
                 }`}
               >
                 {isModernizing('classification', recipe.id)
-                  ? 'Updating...' 
+                  ? 'Updating...'
                   : !canProcessStep(recipe, 'classification')
                     ? 'Need Details First'
                     : (!recipe.cookingTime || !recipe.cuisineType || !recipe.cookingDifficulty || !recipe.diet)
@@ -916,14 +916,14 @@ const RecipeModernizer: React.FC<RecipeModernizerProps> = ({ showPointsToast }) 
                   !canProcessStep(recipe, 'summary')
                     ? 'opacity-50 cursor-not-allowed bg-gray-100 text-gray-600'
                     : isModernizing('summary', recipe.id)
-                      ? 'opacity-50 cursor-not-allowed bg-gray-100 text-gray-600' 
+                      ? 'opacity-50 cursor-not-allowed bg-gray-100 text-gray-600'
                       : !recipe.recipeSummary
                         ? 'bg-yellow-100 text-yellow-600 hover:bg-yellow-200 cursor-pointer hover:scale-105'
                         : 'bg-gray-100 text-gray-600 hover:bg-gray-200 cursor-pointer hover:scale-105'
                 }`}
               >
                 {isModernizing('summary', recipe.id)
-                  ? 'Updating...' 
+                  ? 'Updating...'
                   : !canProcessStep(recipe, 'summary')
                     ? 'Need Classification First'
                     : !recipe.recipeSummary
@@ -938,14 +938,14 @@ const RecipeModernizer: React.FC<RecipeModernizerProps> = ({ showPointsToast }) 
                   !canProcessStep(recipe, 'nutrition')
                     ? 'opacity-50 cursor-not-allowed bg-gray-100 text-gray-600'
                     : isModernizing('nutrition', recipe.id)
-                      ? 'opacity-50 cursor-not-allowed bg-gray-100 text-gray-600' 
+                      ? 'opacity-50 cursor-not-allowed bg-gray-100 text-gray-600'
                       : !recipe.macroInfo
                         ? 'bg-green-100 text-green-600 hover:bg-green-200 cursor-pointer hover:scale-105'
                         : 'bg-gray-100 text-gray-600 hover:bg-gray-200 cursor-pointer hover:scale-105'
                 }`}
               >
                 {isModernizing('nutrition', recipe.id)
-                  ? 'Updating...' 
+                  ? 'Updating...'
                   : !canProcessStep(recipe, 'nutrition')
                     ? 'Need Details First'
                     : !recipe.macroInfo
@@ -960,14 +960,14 @@ const RecipeModernizer: React.FC<RecipeModernizerProps> = ({ showPointsToast }) 
                   !canProcessStep(recipe, 'pairings')
                     ? 'opacity-50 cursor-not-allowed bg-gray-100 text-gray-600'
                     : isModernizing('pairings', recipe.id)
-                      ? 'opacity-50 cursor-not-allowed bg-gray-100 text-gray-600' 
+                      ? 'opacity-50 cursor-not-allowed bg-gray-100 text-gray-600'
                       : !recipe.dishPairings
                         ? 'bg-blue-100 text-blue-600 hover:bg-blue-200 cursor-pointer hover:scale-105'
                         : 'bg-gray-100 text-gray-600 hover:bg-gray-200 cursor-pointer hover:scale-105'
                 }`}
               >
                 {isModernizing('pairings', recipe.id)
-                  ? 'Updating...' 
+                  ? 'Updating...'
                   : !canProcessStep(recipe, 'pairings')
                     ? 'Need Details First'
                     : !recipe.dishPairings
@@ -980,8 +980,8 @@ const RecipeModernizer: React.FC<RecipeModernizerProps> = ({ showPointsToast }) 
               onClick={() => handleDeleteRecipe(recipe.id)}
               disabled={deletingId === recipe.id}
               className={`w-full md:w-auto px-2 py-1 text-sm rounded transition-colors
-                ${deletingId === recipe.id 
-                  ? 'opacity-50 cursor-not-allowed bg-gray-100 text-gray-600' 
+                ${deletingId === recipe.id
+                  ? 'opacity-50 cursor-not-allowed bg-gray-100 text-gray-600'
                   : 'bg-red-100 text-red-600 hover:bg-red-200 cursor-pointer hover:scale-105'
                 }`}
             >
@@ -1047,4 +1047,4 @@ const RecipeModernizer: React.FC<RecipeModernizerProps> = ({ showPointsToast }) 
   );
 };
 
-export default RecipeModernizer; 
+export default RecipeModernizer;

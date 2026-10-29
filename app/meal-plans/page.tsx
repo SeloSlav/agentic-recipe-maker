@@ -6,8 +6,8 @@ import { useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { useAuth } from "../context/AuthContext";
 import { useEffectivePlan } from "../context/PlanDebugContext";
-import { auth, db } from "../firebase/firebase";
-import { doc, getDoc, updateDoc, setDoc, collection, getDocs, deleteDoc, Timestamp } from "firebase/firestore";
+import { auth, db } from "../lib/backend/client";
+import { doc, getDoc, updateDoc, setDoc, collection, getDocs, deleteDoc, Timestamp } from "../lib/backend/database";
 import { SidebarLayout } from "../components/SidebarLayout";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { FALLBACK_FUN_FACTS } from "../lib/meal-plan/mealPlanFacts";
@@ -137,7 +137,7 @@ async function fetchPlan(): Promise<"free" | "pro"> {
   const user = auth?.currentUser;
   if (!user) return "free";
   try {
-    const token = await user.getIdToken();
+    const token = await user.getSessionToken();
     const res = await fetch("/api/me", {
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -307,7 +307,7 @@ function MealPlansContent() {
       const msg = err?.message || String(e);
       setHistoryError(msg);
       if (err?.code === "permission-denied") {
-        setHistoryError("Permission denied. Make sure Firestore rules for mealPlanHistory are deployed (firebase deploy --only firestore:rules).");
+        setHistoryError("Could not read meal plan history. Check that the local backend is running and sign in again.");
       }
       return [];
     } finally {
@@ -392,7 +392,7 @@ function MealPlansContent() {
     setResendingPlanId(planId);
     setSendError(null);
     try {
-      const token = await user.getIdToken();
+      const token = await user.getSessionToken();
       const res = await fetch("/api/meal-plan/resend", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
@@ -527,7 +527,7 @@ function MealPlansContent() {
       .then((d) => (d.facts?.length ? d.facts : []))
       .catch(() => []);
 
-    const token = await user.getIdToken();
+    const token = await user.getSessionToken();
     const res = await fetch("/api/meal-plan/send", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },

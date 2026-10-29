@@ -1,6 +1,6 @@
 import { Metadata } from 'next';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '../../firebase/firebase';
+import { doc, getDoc } from '../../lib/backend/database';
+import { db } from "../../lib/backend/client";
 import { RecipeSchema } from './RecipeSchema';
 
 type Props = {
@@ -87,4 +87,4 @@ export default async function Layout({
       {children}
     </div>
   );
-} 
+}

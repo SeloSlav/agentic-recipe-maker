@@ -1,9 +1,15 @@
+import path from 'node:path';
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+    distDir: process.env.NEXT_BUILD_DIR || '.next',
+    webpack(config, { isServer }) {
+      // Keep the owner credential and database connection out of browser bundles.
+      config.resolve.alias['local-data-request'] = path.resolve('app/lib/backend', isServer ? 'request.server.ts' : 'request.ts');
+      return config;
+    },
     experimental: {
         // Reduce layout chunk size; helps avoid ChunkLoadError timeout
         optimizePackageImports: [
-            'firebase',
             '@fortawesome/fontawesome-svg-core',
             '@fortawesome/react-fontawesome',
             '@fortawesome/free-solid-svg-icons',
@@ -19,10 +25,6 @@ const nextConfig = {
       remotePatterns: [
         {
           protocol: 'https',
-          hostname: 'firebasestorage.googleapis.com',
-        },
-        {
-          protocol: 'https',
           hostname: 'oaidalleapiprodscus.blob.core.windows.net',
         },
         {
@@ -32,6 +34,6 @@ const nextConfig = {
       ],
     },
   };
-  
+
   export default nextConfig;
-  
+

@@ -43,7 +43,7 @@ export function createBabaChatTools(userId: string) {
     ),
     tool(
       async ({ recipeContent }) => {
-        const baseUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : `http://localhost:${process.env.PORT || 3000}`;
+        const baseUrl = `http://127.0.0.1:${process.env.PORT || 3001}`;
         let cls = null;
         try {
           const res = await fetch(`${baseUrl}/api/classifyRecipe`, {

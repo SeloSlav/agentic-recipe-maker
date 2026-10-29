@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
-import { collection, getDocs, doc, updateDoc, arrayUnion, Timestamp, getDoc, setDoc, deleteDoc, addDoc } from 'firebase/firestore';
-import { db } from '../firebase/firebase';
+import { collection, getDocs, doc, updateDoc, arrayUnion, Timestamp, getDoc, setDoc, deleteDoc, addDoc } from '../lib/backend/database';
+import { db } from "../lib/backend/client";
 import { useAuth } from '../context/AuthContext';
 import { Goodie, UserInventoryItem, MarketplaceState } from './types';
 import { MarketplaceList } from './components/MarketplaceList';
@@ -36,9 +36,9 @@ export default function Marketplace() {
                 // Fetch user's inventory
                 const userInventoryRef = doc(db, `users/${user.uid}/inventory/items`);
                 const userInventoryDoc = await getDoc(userInventoryRef);
-                
+
                 let inventory: UserInventoryItem[] = [];
-                
+
                 if (userInventoryDoc.exists()) {
                     inventory = userInventoryDoc.data()?.items || [];
                 } else {
@@ -106,7 +106,7 @@ export default function Marketplace() {
 
                 // Get reference to user's inventory document
                 const userInventoryRef = doc(db, `users/${user.uid}/inventory/items`);
-                
+
                 try {
                     // Try to update existing inventory
                     await updateDoc(userInventoryRef, {
@@ -200,11 +200,11 @@ export default function Marketplace() {
                             <UserInventory items={state.userInventory
                                 .filter(item => item.category === 'Olive Oil')
                                 .sort((a, b) => {
-                                const dateA = a.purchasedAt instanceof Timestamp ? 
-                                    a.purchasedAt.toDate().getTime() : 
+                                const dateA = a.purchasedAt instanceof Timestamp ?
+                                    a.purchasedAt.toDate().getTime() :
                                     a.purchasedAt.getTime();
-                                const dateB = b.purchasedAt instanceof Timestamp ? 
-                                    b.purchasedAt.toDate().getTime() : 
+                                const dateB = b.purchasedAt instanceof Timestamp ?
+                                    b.purchasedAt.toDate().getTime() :
                                     b.purchasedAt.getTime();
                                 return dateB - dateA; // Sort in descending order (newest first)
                             })} />
@@ -215,8 +215,8 @@ export default function Marketplace() {
                     <div className="w-full">
                         <h2 className="text-2xl font-semibold mb-4">Available Discount Codes</h2>
                         <div className="overflow-y-auto pr-2 custom-scrollbar">
-                            <MarketplaceList 
-                                goodies={state.goodies} 
+                            <MarketplaceList
+                                goodies={state.goodies}
                                 onPurchase={handlePurchase}
                             />
                         </div>
@@ -226,4 +226,4 @@ export default function Marketplace() {
         </div>
         </SidebarLayout>
     );
-} 
+}

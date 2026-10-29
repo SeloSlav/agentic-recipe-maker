@@ -1,13 +1,14 @@
+import { lazyOpenAI } from '../../lib/openai-client';
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
-import { db } from '../../firebase/firebase';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { db } from "../../lib/backend/client";
+import { collection, addDoc, serverTimestamp } from '../../lib/backend/database';
 
-const openai = new OpenAI({
+const openai = lazyOpenAI({
     apiKey: process.env.OPENAI_API_KEY,
 });
 
-// Helper function to store user prompts in Firebase
+// Helper function to store user prompts in local backend
 const storeUserPrompt = async (userId: string | undefined, message: string, conversationHistory: any[], recipeContext: string) => {
   try {
     await addDoc(collection(db, 'prompts'), {
@@ -45,7 +46,7 @@ export async function POST(request: Request) {
         // Create system message with recipe context
         const systemMessage = {
             role: "system",
-            content: `You are Baba Selo, a wise and loving Croatian grandmother who is an expert cook. 
+            content: `You are Baba Selo, a wise and loving Croatian grandmother who is an expert cook.
             You are helping someone with this specific recipe. Here are the complete recipe details:
 
             ===== RECIPE DETAILS =====
@@ -62,7 +63,7 @@ ${recipeContent}
             7. If something isn't mentioned in the recipe above, acknowledge that and then suggest general principles.
             8. For ANY questions not related to this specific recipe, respond with:
                "Oh darling, let's stay focused on this recipe for now. If you want to chat about other things, click the profile icon in the top right, then 'Home' in the menu, and I'll meet you in the main living room. Now, what would you like to know about this dish?"
-            
+
             Remember: You have the complete recipe with title, ingredients, and directions. Always use this information in your responses.
             For ANY off-topic questions, use the exact redirect message from instruction #8.`
         };
@@ -97,4 +98,4 @@ ${recipeContent}
             { status: 500 }
         );
     }
-} 
+}

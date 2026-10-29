@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState, useRef } from 'react';
-import { db } from '../../firebase/firebase';
-import { collection, query, orderBy, getDocs, doc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { db } from "../../lib/backend/client";
+import { collection, query, orderBy, getDocs, doc, updateDoc, deleteDoc } from '../../lib/backend/database';
 import Link from 'next/link';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEllipsisH } from '@fortawesome/free-solid-svg-icons';
@@ -35,8 +35,8 @@ const toBase64 = (str: string) =>
     ? Buffer.from(str).toString('base64')
     : window.btoa(str);
 
-export const RecipeCard = ({ recipe, onLike, currentUser, showUsername = false }: { 
-  recipe: Recipe; 
+export const RecipeCard = ({ recipe, onLike, currentUser, showUsername = false }: {
+  recipe: Recipe;
   onLike?: (recipe: Recipe) => void;
   currentUser?: any;
   showUsername?: boolean;
@@ -155,7 +155,7 @@ export const RecipeCard = ({ recipe, onLike, currentUser, showUsername = false }
       <div className="absolute inset-0">
         {/* Image Click Area - Top portion */}
         <Link href={`/recipe/${recipe.id}`} className="absolute top-0 left-0 right-0 h-3/4" />
-        
+
         {/* Title and Menu Area - Bottom portion */}
         <div className="absolute bottom-0 left-0 right-0 h-1/4 bg-gradient-to-t from-black/60 to-transparent p-4">
           <div className="flex justify-between items-center">
@@ -211,7 +211,7 @@ export const RecipeCard = ({ recipe, onLike, currentUser, showUsername = false }
 
   // Desktop Layout
   const DesktopCard = () => (
-    <Link 
+    <Link
       href={`/recipe/${recipe.id}`}
       className="hidden md:block relative h-48 rounded-xl overflow-hidden group bg-gray-100"
     >
@@ -315,7 +315,7 @@ export const RecipeList = () => {
     try {
       const recipesQuery = query(collection(db, "recipes"), orderBy("lastPinnedAt", "desc"));
       const recipeDocs = await getDocs(recipesQuery);
-      
+
       const allRecipes = recipeDocs.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
@@ -368,7 +368,7 @@ export const RecipeList = () => {
 
   const renderMenu = (id: string, isPinned: boolean, recipeTitle: string) => {
     const isPinning = loadingPinAction === id;
-    
+
     return (
       <div className="absolute right-0 z-40 bg-white rounded-xl shadow-lg w-48 border border-gray-200 p-2">
         <ul className="space-y-1">
@@ -432,4 +432,4 @@ export const RecipeList = () => {
       </div>
     </div>
   );
-}; 
+};

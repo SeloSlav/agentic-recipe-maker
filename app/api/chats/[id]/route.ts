@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { admin } from '../../../firebase/firebaseAdmin';
+import { serverDb, serverAuth } from "../../../lib/backend/admin";
 import { MAX_PINNED_CHATS } from '../../../lib/chatConstants';
 
 // GET: Fetch single chat (Pro only)
@@ -14,11 +14,11 @@ export async function GET(
     }
 
     const idToken = authHeader.split('Bearer ')[1];
-    const decoded = await admin.auth().verifyIdToken(idToken);
+    const decoded = await serverAuth.verifyToken(idToken);
     const userId = decoded.uid;
     const { id } = await params;
 
-    const chatDoc = await admin.firestore().collection('chats').doc(id).get();
+    const chatDoc = await serverDb.collection('chats').doc(id).get();
     if (!chatDoc.exists) {
       return NextResponse.json({ error: 'Chat not found' }, { status: 404 });
     }
@@ -28,8 +28,8 @@ export async function GET(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const userDoc = await admin.firestore().collection('users').doc(userId).get();
-    const adminDoc = await admin.firestore().collection('admins').doc(userId).get();
+    const userDoc = await serverDb.collection('users').doc(userId).get();
+    const adminDoc = await serverDb.collection('admins').doc(userId).get();
     const isAdmin = adminDoc.exists && adminDoc.data()?.active === true;
     if (userDoc.data()?.plan !== 'pro' && !isAdmin) {
       return NextResponse.json({ error: 'Pro subscription required' }, { status: 403 });
@@ -61,11 +61,11 @@ export async function PATCH(
     }
 
     const idToken = authHeader.split('Bearer ')[1];
-    const decoded = await admin.auth().verifyIdToken(idToken);
+    const decoded = await serverAuth.verifyToken(idToken);
     const userId = decoded.uid;
     const { id } = await params;
 
-    const chatRef = admin.firestore().collection('chats').doc(id);
+    const chatRef = serverDb.collection('chats').doc(id);
     const chatDoc = await chatRef.get();
     if (!chatDoc.exists) {
       return NextResponse.json({ error: 'Chat not found' }, { status: 404 });
@@ -76,8 +76,8 @@ export async function PATCH(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const userDoc = await admin.firestore().collection('users').doc(userId).get();
-    const adminDoc = await admin.firestore().collection('admins').doc(userId).get();
+    const userDoc = await serverDb.collection('users').doc(userId).get();
+    const adminDoc = await serverDb.collection('admins').doc(userId).get();
     const isAdmin = adminDoc.exists && adminDoc.data()?.active === true;
     if (userDoc.data()?.plan !== 'pro' && !isAdmin) {
       return NextResponse.json({ error: 'Pro subscription required' }, { status: 403 });
@@ -85,7 +85,7 @@ export async function PATCH(
 
     const body = await req.json();
     const updates: Record<string, unknown> = {
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: serverDb.transforms.serverTimestamp(),
     };
 
     if (typeof body.title === 'string') updates.title = body.title.slice(0, 200);
@@ -93,8 +93,7 @@ export async function PATCH(
     if (typeof body.pinned === 'boolean') {
       // Enforce pinned limit server-side to prevent bypassing UI checks.
       if (body.pinned && !data.pinned) {
-        const pinnedSnapshot = await admin
-          .firestore()
+        const pinnedSnapshot = await serverDb
           .collection('chats')
           .where('userId', '==', userId)
           .where('pinned', '==', true)
@@ -130,11 +129,11 @@ export async function DELETE(
     }
 
     const idToken = authHeader.split('Bearer ')[1];
-    const decoded = await admin.auth().verifyIdToken(idToken);
+    const decoded = await serverAuth.verifyToken(idToken);
     const userId = decoded.uid;
     const { id } = await params;
 
-    const chatDoc = await admin.firestore().collection('chats').doc(id).get();
+    const chatDoc = await serverDb.collection('chats').doc(id).get();
     if (!chatDoc.exists) {
       return NextResponse.json({ error: 'Chat not found' }, { status: 404 });
     }
@@ -143,14 +142,14 @@ export async function DELETE(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const userDoc = await admin.firestore().collection('users').doc(userId).get();
-    const adminDoc = await admin.firestore().collection('admins').doc(userId).get();
+    const userDoc = await serverDb.collection('users').doc(userId).get();
+    const adminDoc = await serverDb.collection('admins').doc(userId).get();
     const isAdmin = adminDoc.exists && adminDoc.data()?.active === true;
     if (userDoc.data()?.plan !== 'pro' && !isAdmin) {
       return NextResponse.json({ error: 'Pro subscription required' }, { status: 403 });
     }
 
-    await admin.firestore().collection('chats').doc(id).delete();
+    await serverDb.collection('chats').doc(id).delete();
     return NextResponse.json({ ok: true });
   } catch (error) {
     console.error('Error deleting chat:', error);

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { admin } from '../../firebase/firebaseAdmin';
+import { serverDb, serverAuth } from "../../lib/backend/admin";
 
 export interface ChatMessage {
   role: 'user' | 'assistant';
@@ -26,19 +26,19 @@ export async function GET(req: Request) {
     }
 
     const idToken = authHeader.split('Bearer ')[1];
-    const decoded = await admin.auth().verifyIdToken(idToken);
+    const decoded = await serverAuth.verifyToken(idToken);
     const userId = decoded.uid;
 
-    const userDoc = await admin.firestore().collection('users').doc(userId).get();
+    const userDoc = await serverDb.collection('users').doc(userId).get();
     const plan = userDoc.data()?.plan ?? 'free';
-    const adminDoc = await admin.firestore().collection('admins').doc(userId).get();
+    const adminDoc = await serverDb.collection('admins').doc(userId).get();
     const isAdmin = adminDoc.exists && adminDoc.data()?.active === true;
 
     if (plan !== 'pro' && !isAdmin) {
       return NextResponse.json({ chats: [], plan });
     }
 
-    const chatsRef = admin.firestore().collection('chats');
+    const chatsRef = serverDb.collection('chats');
     const snapshot = await chatsRef.where('userId', '==', userId).get();
 
     const chats = snapshot.docs
@@ -75,11 +75,11 @@ export async function POST(req: Request) {
     }
 
     const idToken = authHeader.split('Bearer ')[1];
-    const decoded = await admin.auth().verifyIdToken(idToken);
+    const decoded = await serverAuth.verifyToken(idToken);
     const userId = decoded.uid;
 
-    const userDoc = await admin.firestore().collection('users').doc(userId).get();
-    const adminDoc = await admin.firestore().collection('admins').doc(userId).get();
+    const userDoc = await serverDb.collection('users').doc(userId).get();
+    const adminDoc = await serverDb.collection('admins').doc(userId).get();
     const isAdmin = adminDoc.exists && adminDoc.data()?.active === true;
     if (userDoc.data()?.plan !== 'pro' && !isAdmin) {
       return NextResponse.json({ error: 'Pro subscription required to save chats' }, { status: 403 });
@@ -94,13 +94,13 @@ export async function POST(req: Request) {
       ...(m.imageUrl && !String(m.imageUrl).startsWith('blob:') ? { imageUrl: m.imageUrl } : {}),
     }));
 
-    const chatRef = await admin.firestore().collection('chats').add({
+    const chatRef = await serverDb.collection('chats').add({
       userId,
       title: String(title).slice(0, 200),
       messages: sanitized,
       pinned: false,
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      createdAt: serverDb.transforms.serverTimestamp(),
+      updatedAt: serverDb.transforms.serverTimestamp(),
     });
 
     return NextResponse.json({ id: chatRef.id });

@@ -3,8 +3,8 @@ import { isReservedPath } from '../config/reservedPaths';
 import { notFound } from 'next/navigation';
 import UserProfileClient from './UserProfileClient';
 import { SidebarLayout } from '../components/SidebarLayout';
-import { collection, query, where, getDocs } from 'firebase/firestore';
-import { db } from '../firebase/firebase';
+import { collection, query, where, getDocs } from '../lib/backend/database';
+import { db } from "../lib/backend/client";
 
 type Props = {
     params: Promise<{ username: string }>;
@@ -36,4 +36,4 @@ export default async function UserProfile(props: Props) {
             <UserProfileClient userId={userId} username={username} />
         </SidebarLayout>
     );
-} 
+}

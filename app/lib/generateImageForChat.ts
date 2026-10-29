@@ -1,8 +1,7 @@
-import { getStorage } from 'firebase-admin/storage';
-import '../firebase/firebaseAdmin';
+import { saveFile, localFileUrl } from './backend/files-server';
 
 /**
- * Generate an image for chat (food, dish, etc.) and upload to Firebase.
+ * Generate an image for chat (food, dish, etc.) and upload to local backend.
  * Uses gpt-image-1 with quality low (same as recipe page).
  */
 export async function generateImageForChat(prompt: string, userId = 'anonymous'): Promise<{ imageUrl: string }> {
@@ -37,17 +36,8 @@ export async function generateImageForChat(prompt: string, userId = 'anonymous')
   const imageBuffer = Buffer.from(b64, 'base64');
 
   const storageId = `chat-${userId}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-  const bucket = getStorage().bucket();
-  const file = bucket.file(`recipe-images/${storageId}`);
-
-  await file.save(imageBuffer, {
-    metadata: { contentType: 'image/png' },
-  });
-
-  const [url] = await file.getSignedUrl({
-    action: 'read',
-    expires: '03-01-2500',
-  });
-
+  const key = `recipe-images/${storageId}`;
+  await saveFile(key, imageBuffer, 'image/png');
+  const url = localFileUrl(key);
   return { imageUrl: url };
 }

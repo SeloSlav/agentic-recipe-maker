@@ -1,7 +1,8 @@
+import { lazyOpenAI } from '../../lib/openai-client';
 import { NextResponse } from 'next/server';
 import OpenAI from 'openai';
 
-const openai = new OpenAI({
+const openai = lazyOpenAI({
     apiKey: process.env.OPENAI_API_KEY
 });
 
@@ -68,4 +69,4 @@ Return ONLY a JSON object with an "items" array containing the complete dishes f
         console.error('Error extracting food items:', error);
         return NextResponse.json({ error: 'Failed to extract food items' }, { status: 500 });
     }
-}   
+}

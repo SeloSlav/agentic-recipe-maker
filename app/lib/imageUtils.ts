@@ -1,5 +1,5 @@
-import { collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
-import { db } from '../firebase/firebase';
+import { collection, query, where, getDocs, orderBy, limit } from './backend/database';
+import { db } from "./backend/client";
 
 export async function generateImageHash(file: File): Promise<string> {
   // Convert file to array buffer
@@ -18,13 +18,13 @@ export async function generateImageHash(file: File): Promise<string> {
 function calculateHashSimilarity(hash1: string, hash2: string): number {
   let matchingChars = 0;
   const length = Math.min(hash1.length, hash2.length);
-  
+
   for (let i = 0; i < length; i++) {
     if (hash1[i] === hash2[i]) {
       matchingChars++;
     }
   }
-  
+
   return matchingChars / length;
 }
 
@@ -36,10 +36,10 @@ export async function checkImageSimilarity(imageHash: string, userId: string): P
     orderBy("timestamp", "desc"),
     limit(10)
   );
-  
+
   const snapshots = await getDocs(userUploadsQuery);
   const similarityThreshold = 0.9; // 90% similarity threshold
-  
+
   for (const doc of snapshots.docs) {
     const existingHash = doc.data().hash;
     if (calculateHashSimilarity(imageHash, existingHash) > similarityThreshold) {
@@ -69,7 +69,7 @@ export async function verifyImageContent(file: File): Promise<{ isValid: boolean
     gif: ['47494638']
   };
 
-  const isValidHeader = 
+  const isValidHeader =
     header.startsWith(validHeaders.jpeg[0]) || // JPEG
     header.startsWith(validHeaders.png[0]) || // PNG
     header.startsWith(validHeaders.gif[0]);   // GIF
@@ -109,4 +109,4 @@ export async function checkRecipeImageLimit(recipeId: string): Promise<{ isValid
     return { isValid: false, message: "Maximum number of images reached for this recipe (limit: 3)" };
   }
   return { isValid: true };
-} 
+}

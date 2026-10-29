@@ -1,0 +1,28 @@
+name: baba-selo
+services:
+  postgres:
+    image: pgvector/pgvector:pg17
+    environment:
+      POSTGRES_USER: baba
+      POSTGRES_PASSWORD: baba-local-only
+      POSTGRES_DB: baba_selo
+    ports:
+      - "127.0.0.1:${LOCAL_POSTGRES_PORT:-5433}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./scripts/local/init.sql:/docker-entrypoint-initdb.d/01-vector.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U baba -d baba_selo"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+  spacetime:
+    image: clockworklabs/spacetime:v2.10.2
+    command: ["start", "--listen-addr", "0.0.0.0:3000", "--data-dir", "/data", "--non-interactive"]
+    ports:
+      - "127.0.0.1:${LOCAL_SPACETIME_PORT:-3100}:3000"
+    volumes:
+      - spacetime-data:/data
+volumes:
+  postgres-data:
+  spacetime-data:

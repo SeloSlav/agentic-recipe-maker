@@ -1,7 +1,8 @@
+import { lazyOpenAI } from '../../../lib/openai-client';
 import { NextResponse } from 'next/server';
 import OpenAI from 'openai';
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const openai = lazyOpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 /**
  * Lightweight API to generate fun facts about the user's meal plan type.

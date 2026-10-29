@@ -2,8 +2,8 @@
 
 import React, { useEffect, useState, useRef, useCallback } from "react";
 import { useAuth } from "../context/AuthContext";
-import { db } from "../firebase/firebase";        // Adjust if firebase config is in a different path
-import { doc, getDoc, updateDoc, setDoc } from "firebase/firestore";
+import { db } from "../lib/backend/client";
+import { doc, getDoc, updateDoc, setDoc } from "../lib/backend/database";
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { SidebarLayout } from '../components/SidebarLayout';
 import { validateUsername } from '../lib/usernameValidation';
@@ -195,11 +195,11 @@ export default function SettingsPage() {
 
       const userDocRef = doc(db, "users", user.uid);
       await setDoc(userDocRef, { username }, { merge: true });
-      
+
       // Also update the spoonPoints document with the new username
       const spoonRef = doc(db, "spoonPoints", user.uid);
       await setDoc(spoonRef, { username }, { merge: true });
-      
+
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 2000);
     } catch (err) {
@@ -246,7 +246,7 @@ export default function SettingsPage() {
   };
 
   /**
-   * Fetch user's data from Firestore on mount
+   * Fetch user's data from database on mount
    */
   useEffect(() => {
     if (!user || loading) return;
@@ -339,7 +339,7 @@ export default function SettingsPage() {
         <div className={`fixed bottom-4 right-4 p-4 rounded-lg shadow-lg z-50 transition-all duration-300 ${
           isSaving ? "bg-amber-800 text-white" : "bg-amber-600 text-white"
         }`}
-        style={{ 
+        style={{
           opacity: isSaving || saveSuccess ? 1 : 0,
           transform: `translateY(${isSaving || saveSuccess ? '0' : '100%'})`,
           transition: 'opacity 0.3s ease-in-out, transform 0.3s ease-in-out'
@@ -361,7 +361,7 @@ export default function SettingsPage() {
       {/* Error Message */}
       {error && (
         <div className="fixed bottom-4 right-4 p-4 bg-red-600 text-white rounded-lg shadow-lg z-50"
-          style={{ 
+          style={{
             opacity: error ? 1 : 0,
             transform: `translateY(${error ? '0' : '100%'})`,
             transition: 'opacity 0.3s ease-in-out, transform 0.3s ease-in-out'

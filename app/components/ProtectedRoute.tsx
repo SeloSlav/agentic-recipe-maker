@@ -21,8 +21,8 @@ export const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     // Check if current path is protected
-    const isProtectedPath = protectedPaths.some(path => pathname === path);
-    
+    const isProtectedPath = protectedPaths.some(path => pathname === path || pathname.startsWith(path + '/'));
+
     // If it's a protected path and user is not authenticated (and we're done loading)
     if (isProtectedPath && !loading && !user) {
       // Immediate redirect
@@ -47,7 +47,7 @@ export const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
   // If it's a protected path and user is not authenticated, don't render anything
   // This prevents any flash of content before the redirect
-  const isProtectedPath = protectedPaths.some(path => pathname === path);
+  const isProtectedPath = protectedPaths.some(path => pathname === path || pathname.startsWith(path + '/'));
   if (isProtectedPath && !user) {
     return null;
   }

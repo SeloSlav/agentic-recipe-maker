@@ -3,7 +3,7 @@
  * Single OpenAIEmbeddings instance, single pgvector extension check,
  * and cached PGVectorStore instances per table.
  */
-import { PGVectorStore } from "@langchain/community/vectorstores/pgvector";
+import { PGVectorStore } from "@langchain/pgvector";
 import { OpenAIEmbeddings } from "@langchain/openai";
 import { Pool, PoolConfig } from "pg";
 import { MODELS } from "../models";

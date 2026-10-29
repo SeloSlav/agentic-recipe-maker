@@ -4,7 +4,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 
 const STORAGE_KEY = "baba-selo-plan-debug-override";
 
-export type PlanOverride = "logged_out" | "free" | "pro";
+export type PlanOverride = "actual" | "logged_out" | "free" | "pro";
 
 interface PlanDebugContextType {
   planOverride: PlanOverride;
@@ -18,13 +18,13 @@ interface PlanDebugContextType {
 const PlanDebugContext = createContext<PlanDebugContextType | null>(null);
 
 function getStoredOverride(): PlanOverride {
-  if (typeof window === "undefined") return "logged_out";
+  if (typeof window === "undefined") return "actual";
   try {
     const v = localStorage.getItem(STORAGE_KEY);
-    if (v === "logged_out" || v === "free" || v === "pro") return v;
-    return "logged_out";
+    if (v === "actual" || v === "logged_out" || v === "free" || v === "pro") return v;
+    return "actual";
   } catch {
-    return "logged_out";
+    return "actual";
   }
 }
 
@@ -46,6 +46,7 @@ export function PlanDebugProvider({ children }: { children: React.ReactNode }) {
 
   const usePlan = useCallback(
     (realPlan: "free" | "pro"): "free" | "pro" => {
+      if (planOverride === "actual") return realPlan;
       if (planOverride === "pro") return "pro";
       return "free"; // logged_out and free both = free plan
     },

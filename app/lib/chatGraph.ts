@@ -84,19 +84,21 @@ function extractChatResult(messages: BaseMessage[]): ChatGraphOutput {
   };
 }
 
+export function createChatAgent(userId: string, systemPrompt: string) {
+  const tools = createBabaChatTools(userId);
+
+  return createReactAgent({
+    llm: chatModel,
+    tools,
+    prompt: new SystemMessage(systemPrompt),
+  });
+}
+
 export async function runChatGraph(
   input: ChatGraphInput
 ): Promise<ChatGraphOutput> {
   const { messages, systemPrompt, userId } = input;
-  const tools = createBabaChatTools(userId);
-
-  // ChatOpenAI <-> LanguageModelLike version mismatch between @langchain/openai and @langchain/langgraph
-  type AgentLLM = Parameters<typeof createReactAgent>[0]["llm"];
-  const agent = createReactAgent({
-    llm: chatModel as unknown as AgentLLM,
-    tools,
-    messageModifier: new SystemMessage(systemPrompt),
-  });
+  const agent = createChatAgent(userId, systemPrompt);
 
   const result = await agent.invoke({
     messages: toLangChainMessages(messages),
@@ -140,14 +142,7 @@ export async function* runChatGraphStream(
   input: ChatGraphInput
 ): AsyncGenerator<ChatStreamEvent, ChatGraphOutput, unknown> {
   const { messages, systemPrompt, userId } = input;
-  const tools = createBabaChatTools(userId);
-
-  type AgentLLM = Parameters<typeof createReactAgent>[0]["llm"];
-  const agent = createReactAgent({
-    llm: chatModel as unknown as AgentLLM,
-    tools,
-    messageModifier: new SystemMessage(systemPrompt),
-  });
+  const agent = createChatAgent(userId, systemPrompt);
 
   const stream = await agent.stream(
     { messages: toLangChainMessages(messages) },

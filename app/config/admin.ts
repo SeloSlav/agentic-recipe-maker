@@ -1,11 +1,11 @@
-import { db } from '../firebase/firebase';
-import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { db } from "../lib/backend/client";
+import { doc, getDoc, setDoc, serverTimestamp } from '../lib/backend/database';
 
 // Helper function to check if a user is an admin
 export const isAdmin = async (uid: string | undefined): Promise<boolean> => {
     // console.log('=== Admin Check Function ===');
     // console.log('Checking admin status for UID:', uid);
-    
+
     if (!uid) {
         // console.log('No UID provided, returning false');
         return false;
@@ -15,10 +15,10 @@ export const isAdmin = async (uid: string | undefined): Promise<boolean> => {
         // Check the admins collection
         const adminDoc = await getDoc(doc(db, 'admins', uid));
         const isUserAdmin = adminDoc.exists() && adminDoc.data().active === true;
-        
+
         // console.log('Admin document exists:', adminDoc.exists());
         // console.log('Admin status:', isUserAdmin);
-        
+
         return isUserAdmin;
     } catch (error) {
         console.error('Error checking admin status:', error);
@@ -41,4 +41,4 @@ export const createAdmin = async (uid: string): Promise<boolean> => {
         console.error('Error creating admin document:', error);
         return false;
     }
-}; 
+};

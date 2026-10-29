@@ -3,11 +3,11 @@
  * Each function is called when the AI invokes the corresponding tool.
  */
 
-import { admin } from '../firebase/firebaseAdmin';
+import { serverDb, serverAuth } from "./backend/admin";
 import { ChatOpenAI } from '@langchain/openai';
 import { MODELS } from './models';
 
-const adminDb = admin.firestore();
+const adminDb = serverDb;
 
 const translationModel = new ChatOpenAI({
   model: MODELS.translation,
@@ -74,7 +74,7 @@ export async function handleSaveRecipe({ recipeContent, userId, classification }
       cookingDifficulty: classification?.difficulty || 'Unknown',
       cookingTime: classification?.cooking_time || 'Unknown',
       diet: Array.isArray(classification?.diet) ? classification.diet : [],
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      createdAt: serverDb.transforms.serverTimestamp(),
     };
     await adminDb.collection('recipes').doc(docId).set(newRecipe);
     try {
@@ -190,7 +190,7 @@ export async function handleGetNutrition({ recipeContent }: { recipeContent: str
     return { success: false, error: 'No recipe content.' };
   }
   try {
-    const baseUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : `http://localhost:${process.env.PORT || 3000}`;
+    const baseUrl = `http://127.0.0.1:${process.env.PORT || 3001}`;
     const res = await fetch(`${baseUrl}/api/macroInfo`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -344,7 +344,7 @@ export async function handleGenerateMealPlan({
           subject: "Baba Selo's Weekly Meal Plan",
           babaTip: extractBabaTip(plan) || '',
           source: 'chat',
-          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+          createdAt: serverDb.transforms.serverTimestamp(),
         });
         return { success: true, mealPlan: plan, planId: historyRef.id };
       }
@@ -427,7 +427,7 @@ export async function handleAddToMealPlan({ recipeContent, dayOfWeek, userId }: 
         recipeContent,
         ingredients: parsed.ingredients,
         directions: parsed.directions,
-        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt: serverDb.transforms.serverTimestamp(),
       },
       { merge: true }
     );

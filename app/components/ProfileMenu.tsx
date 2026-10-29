@@ -2,13 +2,12 @@
 import React, { useRef, useEffect, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faBookOpenReader, faGear, faHome, faSignOut, faStarOfLife, faSpoon, faCompass, faStore, faShieldHalved, faNewspaper, faCalendarDays } from "@fortawesome/free-solid-svg-icons";
-import { faGoogle } from "@fortawesome/free-brands-svg-icons";
 import Link from "next/link";
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
 import { isAdmin } from '../config/admin';
-import { doc, getDoc, onSnapshot } from 'firebase/firestore';
-import { db } from '../firebase/firebase';
+import { doc, getDoc, onSnapshot } from '../lib/backend/database';
+import { db } from "../lib/backend/client";
 
 interface ProfileMenuProps {
     isOpen: boolean;
@@ -18,7 +17,7 @@ interface ProfileMenuProps {
 
 export const ProfileMenu: React.FC<ProfileMenuProps> = ({ isOpen, onClose, onLogout }) => {
     const menuRef = useRef<HTMLDivElement | null>(null);
-    const { user, signInWithGoogle } = useAuth();
+    const { user, signIn } = useAuth();
     const router = useRouter();
     const [isUserAdmin, setIsUserAdmin] = useState(false);
     const [username, setUsername] = useState<string>("");
@@ -119,10 +118,10 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({ isOpen, onClose, onLog
                     <hr />
                     <li
                         className="flex items-center px-4 py-2 rounded-md hover:bg-amber-50 cursor-pointer"
-                        onClick={() => { signInWithGoogle(); onClose(); }}
+                        onClick={() => { signIn(); onClose(); }}
                     >
-                        <FontAwesomeIcon icon={faGoogle} className="text-[#4285F4] mr-3" />
-                        <span className="font-medium">Continue with Google</span>
+                        <FontAwesomeIcon icon={faShieldHalved} className="text-amber-700 mr-3" />
+                        <span className="font-medium">Continue as local developer</span>
                     </li>
                     <li className="px-4 py-1">
                         <p className="text-xs text-gray-500">New here? One click and you&apos;re in.</p>
@@ -143,15 +142,15 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({ isOpen, onClose, onLog
                 <li className="px-4 py-2">
                     <div className="text-sm text-gray-500">Welcome,</div>
                     <div className="flex items-center justify-between">
-                        <Link 
-                            href={username ? `/${username}` : "/settings"} 
+                        <Link
+                            href={username ? `/${username}` : "/settings"}
                             className="font-medium hover:text-amber-600 transition-colors"
                         >
                             {"Chef " + username || "Anonymous Chef"}
                         </Link>
                         {!username && (
-                            <Link 
-                                href="/settings" 
+                            <Link
+                                href="/settings"
                                 className="text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded-full hover:bg-amber-200 transition-colors"
                             >
                                 Set Username! 👤

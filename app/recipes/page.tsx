@@ -12,13 +12,13 @@ import {
   updateDoc,
   deleteDoc,
   where,
-} from "firebase/firestore";
-import { db } from "../firebase/firebase";
+} from "../lib/backend/database";
+import { db } from "../lib/backend/client";
 import Link from "next/link";
 import Image from "next/image";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faSearch, faXmark, faEllipsisVertical, faThumbtack, faTrashCan } from "@fortawesome/free-solid-svg-icons";
-import { getAuth } from "firebase/auth";
+import { getAuth } from "../lib/backend/auth";
 import { useDeleteRecipe } from "../context/DeleteRecipeContext";
 import { SearchBar } from '../components/SearchBar';
 import { RecipeCardSkeleton } from '../components/RecipeCardSkeleton';
@@ -27,7 +27,7 @@ import { getExploreFilterUrl } from '../components/FilterTag';
 import { SidebarLayout } from '../components/SidebarLayout';
 import { Recipe } from '../recipe/types';
 
-// Add type for Firestore document data
+// Add type for database document data
 interface RecipeDocument {
   recipeTitle: string;
   recipeContent: string;
@@ -102,7 +102,7 @@ const Recipes = () => {
       await updateDoc(recipeRef, {
         pinned: !currentPinned
       });
-      
+
       // Update local state
       const updatedRecipes = recipes.map(recipe =>
         recipe.id === recipeId ? { ...recipe, pinned: !currentPinned } : recipe
@@ -138,7 +138,7 @@ const Recipes = () => {
   const searchRecipes = async (searchTerms: string[]) => {
     if (!user) return;
     setIsSearching(true);
-    
+
     try {
       const recipesRef = collection(db, "recipes");
       let searchQuery = query(
@@ -164,7 +164,7 @@ const Recipes = () => {
         // Ensure arrays are properly handled
         const diets = Array.isArray(recipe.diet) ? recipe.diet : [];
         const ingredients = Array.isArray(recipe.ingredients) ? recipe.ingredients : [];
-        
+
         const searchableFields = [
           recipe.recipeTitle?.toLowerCase() || "",
           recipe.cuisineType?.toLowerCase() || "",
@@ -207,7 +207,7 @@ const Recipes = () => {
 
   const fetchRecipes = async (loadMore = false) => {
     if (!user) return;
-    
+
     if (loadMore) {
       setLoadingMore(true);
     } else {
@@ -226,7 +226,7 @@ const Recipes = () => {
       // Then get paginated results
       const recipesRef = collection(db, "recipes");
       let recipesQuery;
-      
+
       if (loadMore && lastVisible) {
         recipesQuery = query(
           recipesRef,
@@ -346,8 +346,8 @@ const Recipes = () => {
       <div className="sticky top-0 bg-amber-50/95 backdrop-blur-sm z-10 py-4 -mx-4 px-4 shadow-sm border-b border-amber-100">
         <div className="max-w-7xl mx-auto">
           <h1 className="text-3xl font-bold mb-4">My Recipes</h1>
-          <SearchBar 
-            searchTerm={searchTerm} 
+          <SearchBar
+            searchTerm={searchTerm}
             setSearchTerm={setSearchTerm}
             isLoading={isSearching}
             resultCount={filteredRecipes.length}
@@ -402,8 +402,8 @@ const Recipes = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-4">
                   {pinnedRecipes.map((recipe, index) => (
                     <div key={recipe.id} className="relative">
-                      <RecipeCard 
-                        key={recipe.id} 
+                      <RecipeCard
+                        key={recipe.id}
                         recipe={recipe}
                         showMenu={true}
                         onMenuClick={(id) => setMenuOpen(current => current === id ? null : id)}
@@ -419,8 +419,8 @@ const Recipes = () => {
                                 disabled={loadingPinAction === recipe.id}
                                 className="w-full px-4 py-2 text-left hover:bg-amber-50 rounded-md flex items-center gap-2"
                               >
-                                <FontAwesomeIcon 
-                                  icon={faThumbtack} 
+                                <FontAwesomeIcon
+                                  icon={faThumbtack}
                                   className={`transform transition-all duration-300 ${
                                     recipe.pinned ? 'rotate-[45deg] scale-110 text-yellow-500' : 'hover:scale-110'
                                   }`}
@@ -468,8 +468,8 @@ const Recipes = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-4">
                   {unpinnedRecipes.map((recipe, index) => (
                     <div key={recipe.id} className="relative">
-                      <RecipeCard 
-                        key={recipe.id} 
+                      <RecipeCard
+                        key={recipe.id}
                         recipe={recipe}
                         showMenu={true}
                         onMenuClick={(id) => setMenuOpen(current => current === id ? null : id)}
@@ -485,8 +485,8 @@ const Recipes = () => {
                                 disabled={loadingPinAction === recipe.id}
                                 className="w-full px-4 py-2 text-left hover:bg-amber-50 rounded-md flex items-center gap-2"
                               >
-                                <FontAwesomeIcon 
-                                  icon={faThumbtack} 
+                                <FontAwesomeIcon
+                                  icon={faThumbtack}
                                   className={`transform transition-all duration-300 ${
                                     recipe.pinned ? 'rotate-[45deg] scale-110 text-yellow-500' : 'hover:scale-110'
                                   }`}
@@ -532,8 +532,8 @@ const Recipes = () => {
 
             {/* Infinite scroll trigger */}
             {!searchTerm && hasMore && (
-              <div 
-                ref={loadMoreRef} 
+              <div
+                ref={loadMoreRef}
                 className="h-20 flex items-center justify-center mt-8"
                 style={{ minHeight: '100px' }}
               >

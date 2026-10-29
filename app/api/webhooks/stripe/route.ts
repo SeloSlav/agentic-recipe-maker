@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { admin } from '../../../firebase/firebaseAdmin';
+import { serverDb, serverAuth } from "../../../lib/backend/admin";
 
 const stripe = process.env.STRIPE_SECRET_KEY
   ? new Stripe(process.env.STRIPE_SECRET_KEY)
@@ -31,7 +31,7 @@ export async function POST(req: Request) {
       const session = event.data.object as Stripe.Checkout.Session;
       const userId = session.client_reference_id || session.metadata?.userId;
       if (userId) {
-        await admin.firestore().collection('users').doc(userId).set(
+        await serverDb.collection('users').doc(userId).set(
           { plan: 'pro', stripeCustomerId: session.customer },
           { merge: true }
         );
@@ -39,7 +39,7 @@ export async function POST(req: Request) {
     } else if (event.type === 'customer.subscription.deleted' || event.type === 'customer.subscription.updated') {
       const sub = event.data.object as Stripe.Subscription;
       if (event.type === 'customer.subscription.deleted' || sub.status !== 'active') {
-        const customers = await admin.firestore().collection('users')
+        const customers = await serverDb.collection('users')
           .where('stripeCustomerId', '==', sub.customer)
           .limit(1)
           .get();
@@ -47,7 +47,7 @@ export async function POST(req: Request) {
           await d.ref.update({ plan: 'free' });
         }
       } else if (sub.status === 'active') {
-        const customers = await admin.firestore().collection('users')
+        const customers = await serverDb.collection('users')
           .where('stripeCustomerId', '==', sub.customer)
           .limit(1)
           .get();

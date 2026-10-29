@@ -1,5 +1,5 @@
-import { doc, getDoc, setDoc, updateDoc, increment, Timestamp, arrayUnion } from 'firebase/firestore';
-import { db } from '../firebase/firebase';
+import { doc, getDoc, setDoc, updateDoc, increment, Timestamp, arrayUnion } from './backend/database';
+import { db } from "./backend/client";
 
 // Types for the point system
 interface PointAction {
@@ -142,9 +142,9 @@ export class SpoonPointSystem {
   ): Promise<PointTransaction[]> {
     const userPointsRef = doc(db, 'spoonPoints', userId);
     const userPointsDoc = await getDoc(userPointsRef);
-    
+
     if (!userPointsDoc.exists()) return [];
-    
+
     const transactions = userPointsDoc.data().transactions || [];
     return transactions.filter((t: PointTransaction) => {
       const matchesAction = t.actionType === actionType;
@@ -166,7 +166,7 @@ export class SpoonPointSystem {
 
     // Get recent actions
     const recentActions = await this.getActionHistory(userId, action.type, targetId, cooldownDate);
-    
+
     // Check cooldown
     if (recentActions.length > 0 && action.cooldown > 0) {
       return { valid: false, reason: 'Action on cooldown' };
@@ -210,7 +210,7 @@ export class SpoonPointSystem {
         actionType: actionType || 'none',
         targetId: targetId || 'none'
       });
-      
+
       const action = POINT_ACTIONS[actionType];
       if (!action) {
         const error = `Invalid action type: ${actionType}`;
@@ -226,7 +226,7 @@ export class SpoonPointSystem {
         cooldown: action.cooldown,
         maxPerDay: action.maxPerDay || 'none'
       });
-      
+
       if (!validation.valid) {
         console.debug("DEBUG - SpoonPoints - Validation failed:", {
           reason: validation.reason,
@@ -302,9 +302,9 @@ export class SpoonPointSystem {
     if (action.type === 'MARKETPLACE_PURCHASE' && context?.details) {
       return context.details;
     }
-    
+
     let details = action.displayName;
-    
+
     if (action.type === 'UPLOAD_IMAGE' && context?.score) {
       details += ` (Quality Score: ${context.score})`;
     } else if (action.type === 'RECIPE_SAVED_BY_OTHER' && context?.savedBy) {
@@ -340,7 +340,7 @@ const handleGenerateRecipe = async () => {
     recipeId,
     { quality: 'high', length: 500 }
   );
-  
+
   if (result.success) {
     console.log(`Earned ${result.points} points!`);
   } else {
@@ -358,4 +358,4 @@ const checkAvailability = async () => {
   setButtonEnabled(available);
   if (!available) setTooltip(reason);
 };
-*/    
+*/

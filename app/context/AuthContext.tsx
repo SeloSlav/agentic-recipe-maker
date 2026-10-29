@@ -2,27 +2,20 @@
 
 import React, { createContext, useContext, useState, useEffect, useRef } from "react";
 import { usePlanDebug } from "./PlanDebugContext";
-import {
-  GoogleAuthProvider,
-  signInWithPopup,
-  signInWithRedirect,
-  getRedirectResult,
-  onAuthStateChanged,
-  signOut,
-} from "firebase/auth";
-import { auth, db } from "../firebase/firebase";
+import { signIn as signInLocal, onAuthStateChanged, signOut } from "../lib/backend/auth";
+import { auth, db } from "../lib/backend/client";
 import { useRouter, usePathname } from "next/navigation"; // Import Next.js router & usePathname
-import { ProfileMenu } from "../components/ProfileMenu"; 
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"; 
-import { faUserCircle, faSpoon } from "@fortawesome/free-solid-svg-icons"; 
+import { ProfileMenu } from "../components/ProfileMenu";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faUserCircle, faSpoon } from "@fortawesome/free-solid-svg-icons";
 import { SpoonHistoryMenu } from "../components/SpoonHistoryMenu";
-import { doc, onSnapshot, updateDoc } from "firebase/firestore";
+import { doc, onSnapshot, updateDoc } from "../lib/backend/database";
 
 interface AuthContextType {
   user: any;
-  /** Actual Firebase user (for admin check when simulating logged out) */
+  /** Actual session user (for admin check when simulating logged out) */
   realUser: any;
-  signInWithGoogle: () => Promise<void>;
+  signIn: () => Promise<void>;
   logOut: () => Promise<void>;
   loading: boolean;
   authError: string | null;
@@ -31,7 +24,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType>({
   user: null,
   realUser: null,
-  signInWithGoogle: async () => {},
+  signIn: async () => {},
   logOut: async () => {},
   loading: true,
   authError: null,
@@ -42,12 +35,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
-  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false); 
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [isSpoonMenuOpen, setIsSpoonMenuOpen] = useState(false);
   const [spoonData, setSpoonData] = useState<any>(null);
-  const profileMenuRef = useRef<HTMLDivElement | null>(null); 
+  const profileMenuRef = useRef<HTMLDivElement | null>(null);
   const spoonMenuRef = useRef<HTMLDivElement | null>(null);
-  const router = useRouter(); 
+  const router = useRouter();
   const pathname = usePathname();
 
   useEffect(() => {
@@ -65,24 +58,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     return () => unsubscribe();
   }, [router, pathname]);
-
-  // Handle redirect result when user returns from Google sign-in redirect
-  useEffect(() => {
-    getRedirectResult(auth)
-      .then((result) => {
-        if (result?.user) {
-          setAuthError(null);
-        }
-      })
-      .catch((error) => {
-        const code = error?.code || "";
-        if (code === "auth/popup-closed-by-user" || code === "auth/cancelled-popup-request") {
-          setAuthError(null); // User cancelled, don't show error
-        } else {
-          setAuthError("Sign in failed. Please try again.");
-        }
-      });
-  }, []);
 
   // Subscribe to spoon data updates
   useEffect(() => {
@@ -108,27 +83,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return () => unsubscribe();
   }, [user]);
 
-  const signInWithGoogle = async () => {
+  const signIn = async () => {
     setAuthError(null);
-    const provider = new GoogleAuthProvider();
     try {
-      await signInWithPopup(auth, provider);
-      // After successful login, `onAuthStateChanged` will handle redirection if needed.
-    } catch (error: unknown) {
-      const code = (error as { code?: string })?.code || "";
-      // Popup blocked (Safari, Brave, strict privacy) - fall back to redirect
-      if (code === "auth/popup-blocked" || code === "auth/cancelled-popup-request") {
-        await signInWithRedirect(auth, provider);
-        return;
-      }
-      // User closed popup - don't show error
-      if (code === "auth/popup-closed-by-user") {
-        return;
-      }
-      setAuthError("Sign in failed. Please try again or check if popups are allowed.");
+      await signInLocal();
+    } catch {
+      setAuthError("Local sign-in failed. Check that npm run dev is running.");
     }
   };
-
   const logOut = async () => {
     try {
       await signOut(auth);
@@ -173,7 +135,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     // Update local state
     setSpoonData({ ...spoonData, transactions: updatedTransactions });
 
-    // Update Firestore
+    // Update database
     try {
       const userPointsRef = doc(db, "spoonPoints", user.uid);
       await updateDoc(userPointsRef, {
@@ -196,7 +158,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     // Update local state
     setSpoonData({ ...spoonData, transactions: updatedTransactions });
 
-    // Update Firestore
+    // Update database
     try {
       const userPointsRef = doc(db, "spoonPoints", user.uid);
       await updateDoc(userPointsRef, {
@@ -232,7 +194,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const effectiveUser = planDebug?.simulateLoggedOut ? null : user;
 
   return (
-    <AuthContext.Provider value={{ user: effectiveUser, realUser: user, signInWithGoogle, logOut, loading, authError }}>
+    <AuthContext.Provider value={{ user: effectiveUser, realUser: user, signIn, logOut, loading, authError }}>
       <div className="fixed top-4 right-8 z-30 flex items-center gap-2">
         {effectiveUser && (
           /* Spoon Menu Button - only shown for authenticated users */

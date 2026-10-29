@@ -1,12 +1,12 @@
 "use client"; // This marks this file as a client component
 
 import { useParams, useRouter } from "next/navigation"; // Use useParams and useRouter for navigation
-import { db, storage } from "../../firebase/firebase"; // Import Firestore db and storage
-import { doc, getDoc, deleteDoc, updateDoc, query, getDocs, collection, where, addDoc, serverTimestamp, arrayUnion, increment, Timestamp, orderBy, limit } from "firebase/firestore"; // Firestore methods
-import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
+import { db, storage } from "../../lib/backend/client"; // Import database db and storage
+import { doc, getDoc, deleteDoc, updateDoc, query, getDocs, collection, where, addDoc, serverTimestamp, arrayUnion, increment, Timestamp, orderBy, limit } from "../../lib/backend/database"; // database methods
+import { ref, uploadBytes, getDownloadURL, deleteObject } from "../../lib/backend/storage";
 import { useEffect, useState, useRef } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { getAuth } from "firebase/auth"; // Import Firebase auth
+import { getAuth } from "../../lib/backend/auth"; // Import local backend auth
 import Image from "next/image";
 import { RecipeChatBubble } from "../../components/RecipeChatBubble";
 import { SidebarLayout } from "../../components/SidebarLayout";
@@ -28,11 +28,11 @@ import { RecipeMacros } from "../components/RecipeMacros";
 import { RecipePairings } from "../components/RecipePairings";
 import { RecipeTitle } from "../components/RecipeTitle";
 import { RecipeSummary } from "../components/RecipeSummary";
-import { 
-  generateImageHash, 
-  verifyImageContent, 
-  checkImageSimilarity, 
-  checkRecipeImageLimit, 
+import {
+  generateImageHash,
+  verifyImageContent,
+  checkImageSimilarity,
+  checkRecipeImageLimit,
   checkPreviousAnalyses
 } from '../../lib/imageUtils';
 import { isAdmin } from '../../config/admin';
@@ -167,7 +167,7 @@ const RecipeDetails = () => {
     fetchRecipe();
   }, [id, auth]);
 
-  // Fetch similar recipes (Firestore: recent recipes, prefer same cuisine)
+  // Fetch similar recipes (database: recent recipes, prefer same cuisine)
   useEffect(() => {
     if (!recipe || !id) return;
 
@@ -454,7 +454,7 @@ const RecipeDetails = () => {
         }
       }
 
-      // Update Firestore to remove the image URL and clear cache timestamp
+      // Update database to remove the image URL and clear cache timestamp
       const recipeDocRef = doc(db, "recipes", id as string);
       await updateDoc(recipeDocRef, { imageURL: "", imageUpdatedAt: null });
 
@@ -485,7 +485,7 @@ const RecipeDetails = () => {
       // 2. Generate hash of the image
       const imageHash = await generateImageHash(file);
 
-      // 3. Check if this hash exists in Firestore
+      // 3. Check if this hash exists in database
       const hashCheckQuery = query(
         collection(db, "imageHashes"),
         where("hash", "==", imageHash)
@@ -531,7 +531,7 @@ const RecipeDetails = () => {
       // Get the download URL
       const downloadURL = await getDownloadURL(storageRef);
 
-      // Store the image hash in Firestore
+      // Store the image hash in database
       await addDoc(collection(db, "imageHashes"), {
         hash: imageHash,
         userId: user.uid,
@@ -540,7 +540,7 @@ const RecipeDetails = () => {
       });
 
       const ts = Date.now();
-      // Update Firestore with the new image URL and timestamp for cache-busting on refresh
+      // Update database with the new image URL and timestamp for cache-busting on refresh
       const recipeDocRef = doc(db, "recipes", id as string);
       await updateDoc(recipeDocRef, { imageURL: downloadURL, imageUpdatedAt: ts });
 
@@ -574,11 +574,11 @@ const RecipeDetails = () => {
         if (analysisResponse.ok) {
           const analysis = JSON.parse(responseText);
           console.log("✅ Parsed analysis result:", analysis);
-          
+
           if (analysis.score === 0) {
             console.log("⚠️ Image unrelated to recipe");
             showPointsToast(0, analysis.explanation);
-            
+
             // Store the failed analysis result
             await addDoc(collection(db, "imageAnalyses"), {
               imageHash,
@@ -733,7 +733,7 @@ const RecipeDetails = () => {
       if (response.ok) {
         const data = await response.json();
         if (data.macros) {
-          // Save to Firestore
+          // Save to database
           const recipeRef = doc(db, "recipes", id);
           await updateDoc(recipeRef, { macroInfo: data.macros });
 
@@ -873,7 +873,7 @@ const RecipeDetails = () => {
         const data = await response.json();
 
         if (data.suggestion) {  // API returns suggestion, not pairings
-          // Save to Firestore
+          // Save to database
           const recipeRef = doc(db, "recipes", id);
           await updateDoc(recipeRef, { dishPairings: data.suggestion });
 
@@ -918,7 +918,7 @@ const RecipeDetails = () => {
       const recipeDocRef = doc(db, "recipes", id as string);
       const newPinnedState = !recipe?.pinned;
 
-      // Update Firestore with consistent property names
+      // Update database with consistent property names
       await updateDoc(recipeDocRef, {
         pinned: newPinnedState,
         lastPinnedAt: newPinnedState ? new Date().toISOString() : null
@@ -1007,7 +1007,7 @@ const RecipeDetails = () => {
       const recipeRef = doc(db, "recipes", recipe.id);
       const currentLikes = recipe.likes || [];
       const hasLiked = currentLikes.includes(user.uid);
-      
+
       // If already liked, do nothing
       if (hasLiked) {
         return;
@@ -1017,7 +1017,7 @@ const RecipeDetails = () => {
       await updateDoc(recipeRef, {
         likes: arrayUnion(user.uid)
       });
-      
+
       // Update local state
       setRecipe(prev => prev ? {
         ...prev,
@@ -1172,7 +1172,7 @@ const RecipeDetails = () => {
             handleRegenerateIngredientsDirections={handleRegenerateIngredientsDirections}
           />
 
-          <RecipeDirections 
+          <RecipeDirections
             recipe={recipe}
             checkedDirections={checkedDirections}
             toggleDirectionCheck={toggleDirectionCheck}

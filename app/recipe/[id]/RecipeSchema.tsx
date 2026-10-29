@@ -1,5 +1,5 @@
-import { doc, getDoc } from "firebase/firestore";
-import { db } from "../../firebase/firebase";
+import { doc, getDoc } from "../../lib/backend/database";
+import { db } from "../../lib/backend/client";
 
 /**
  * Converts cooking time strings like "30 min", "1 hour", "1.5 hours" to ISO 8601 duration (e.g. PT30M, PT1H).

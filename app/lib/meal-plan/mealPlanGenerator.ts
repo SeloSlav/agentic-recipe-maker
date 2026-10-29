@@ -1,9 +1,10 @@
+import { lazyOpenAI } from '../openai-client';
 /**
  * Shared meal plan generation logic for API routes and chat tools.
  */
 import OpenAI from 'openai';
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const openai = lazyOpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 export interface MealPlanOptions {
   mealPlanPrompt?: string;

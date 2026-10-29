@@ -1,14 +1,5 @@
+import { saveFile, localFileUrl } from '../../lib/backend/files-server';
 import { NextResponse } from 'next/server';
-import { getStorage } from 'firebase-admin/storage';
-import { initializeApp, getApps, cert } from 'firebase-admin/app';
-
-// Initialize Firebase Admin if not already initialized
-if (!getApps().length) {
-    initializeApp({
-        credential: cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY!)),
-        storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
-    });
-}
 
 export async function POST(req: Request) {
     try {
@@ -49,22 +40,9 @@ export async function POST(req: Request) {
 
         const imageBuffer = Buffer.from(b64, 'base64');
 
-        // Upload to Firebase Storage
-        const bucket = getStorage().bucket();
-        const file = bucket.file(`recipe-images/${recipeId}`);
-        
-        await file.save(imageBuffer, {
-            metadata: {
-                contentType: 'image/png'
-            }
-        });
-
-        // Get the public URL
-        const [url] = await file.getSignedUrl({
-            action: 'read',
-            expires: '03-01-2500' // Far future expiration
-        });
-
+        const key = `recipe-images/${recipeId}.png`;
+        await saveFile(key, imageBuffer, 'image/png');
+        const url = localFileUrl(key);
         return NextResponse.json({ imageUrl: url });
     } catch (error) {
         console.error('Error generating image:', error);
@@ -73,4 +51,4 @@ export async function POST(req: Request) {
             { status: 500 }
         );
     }
-} 
+}

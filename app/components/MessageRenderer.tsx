@@ -10,7 +10,7 @@ import {
     isRecipe,
 } from './messageUtils';
 import { MealPlanMessage, isMealPlan } from './MealPlanMessage';
-import { getAuth } from 'firebase/auth';
+import { getAuth } from '../lib/backend/auth';
 
 interface MessageRendererProps {
     message: Message;

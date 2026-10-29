@@ -1,13 +1,14 @@
-import { admin } from '../firebase/firebaseAdmin';
+import { Timestamp } from './backend/timestamp';
+import { serverDb, serverAuth } from "./backend/admin";
 import { POINT_ACTIONS } from './spoonPoints';
 
-const db = admin.firestore();
+const db = serverDb;
 
 interface PointTransaction {
   userId: string;
   actionType: string;
   points: number;
-  timestamp: FirebaseFirestore.Timestamp;
+  timestamp: Timestamp;
   context?: Record<string, any> | null;
   targetId?: string | null;
   details?: string;
@@ -73,7 +74,7 @@ export async function awardPointsServer(
       userId,
       actionType,
       points,
-      timestamp: admin.firestore.Timestamp.now(),
+      timestamp: serverDb.Timestamp.now(),
       targetId: targetId || null,
       context: context || null,
       details: action.displayName,
@@ -86,8 +87,8 @@ export async function awardPointsServer(
       });
     } else {
       await userPointsRef.update({
-        totalPoints: admin.firestore.FieldValue.increment(points),
-        transactions: admin.firestore.FieldValue.arrayUnion(transaction),
+        totalPoints: serverDb.transforms.increment(points),
+        transactions: serverDb.transforms.arrayUnion(transaction),
       });
     }
 

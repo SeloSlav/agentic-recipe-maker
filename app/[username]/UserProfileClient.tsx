@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { collection, query, where, getDocs, getCountFromServer, orderBy, limit, startAfter, doc, updateDoc, arrayUnion, arrayRemove, getDoc, Timestamp, increment, setDoc } from 'firebase/firestore';
-import { db } from '../firebase/firebase';
+import { collection, query, where, getDocs, getCountFromServer, orderBy, limit, startAfter, doc, updateDoc, arrayUnion, arrayRemove, getDoc, Timestamp, increment, setDoc } from '../lib/backend/database';
+import { db } from "../lib/backend/client";
 import { Recipe } from '../recipe/types';
 import { RecipeCard } from '../components/RecipeCard';
 import { RecipeCardSkeleton } from '../components/RecipeCardSkeleton';
@@ -19,7 +19,7 @@ interface UserProfileClientProps {
     username: string;
 }
 
-interface FirestoreRecipeData {
+interface RecipeDocumentData {
     recipeTitle?: string;
     recipeContent?: string;
     cuisineType?: string;
@@ -106,7 +106,7 @@ export default function UserProfileClient({ userId, username }: UserProfileClien
             // Get all matching documents
             const querySnapshot = await getDocs(searchQuery);
             const allRecipes = querySnapshot.docs.map((doc) => {
-                const data = doc.data() as FirestoreRecipeData;
+                const data = doc.data() as RecipeDocumentData;
                 return {
                     id: doc.id,
                     ...data,
@@ -186,7 +186,7 @@ export default function UserProfileClient({ userId, username }: UserProfileClien
             ]);
             setTotalRecipes(countSnapshot.data().count);
             const fetchedRecipes = querySnapshot.docs.map(doc => {
-                const data = doc.data() as FirestoreRecipeData;
+                const data = doc.data() as RecipeDocumentData;
                 return {
                     id: doc.id,
                     ...data,
@@ -414,7 +414,7 @@ export default function UserProfileClient({ userId, username }: UserProfileClien
 
             const data = await response.json();
 
-            // Update Firestore with the new photo URL
+            // Update database with the new photo URL
             const userRef = doc(db, "users", userId);
             await updateDoc(userRef, {
                 profilePhoto: data.photoUrl
@@ -673,4 +673,4 @@ export default function UserProfileClient({ userId, username }: UserProfileClien
             )}
         </div>
     );
-} 
+}

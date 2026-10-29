@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { collection, getDocs, doc, updateDoc, writeBatch, query, limit } from 'firebase/firestore';
-import { db } from '../../firebase/firebase';
+import { collection, getDocs, doc, updateDoc, writeBatch, query, limit } from '../../lib/backend/database';
+import { db } from "../../lib/backend/client";
 import { LoadingSpinner } from '../../components/LoadingSpinner';
 import { isAdmin } from '../../config/admin';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -33,13 +33,13 @@ const DatabaseMigrations: React.FC<DatabaseMigrationsProps> = ({ user, showPoint
 
         try {
             setLoading(true);
-            
+
             // First, get total count for progress tracking
             const recipesSnapshot = await getDocs(collection(db, 'recipes'));
             const totalRecipes = recipesSnapshot.size;
             setProgress({ current: 0, total: totalRecipes });
 
-            // Process in batches of 500 (Firestore batch limit)
+            // Process in batches of 500 (database batch limit)
             const BATCH_SIZE = 500;
             let processedCount = 0;
 
@@ -77,13 +77,13 @@ const DatabaseMigrations: React.FC<DatabaseMigrationsProps> = ({ user, showPoint
 
     return (
         <div className="bg-white rounded-3xl shadow-lg border border-gray-300 overflow-hidden mb-8">
-            <button 
+            <button
                 onClick={() => setIsOpen(!isOpen)}
                 className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-100 transition-colors"
             >
                 <h2 className="text-lg font-medium text-[#5d5d5d]">Database Migrations</h2>
-                <FontAwesomeIcon 
-                    icon={isOpen ? faChevronDown : faChevronRight} 
+                <FontAwesomeIcon
+                    icon={isOpen ? faChevronDown : faChevronRight}
                     className={`text-[#5d5d5d] transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
                 />
             </button>
@@ -117,7 +117,7 @@ const DatabaseMigrations: React.FC<DatabaseMigrationsProps> = ({ user, showPoint
                                             <span>{Math.round((progress.current / progress.total) * 100)}%</span>
                                         </div>
                                         <div className="w-full bg-gray-200 rounded-full h-2.5">
-                                            <div 
+                                            <div
                                                 className="bg-black h-2.5 rounded-full transition-all duration-300"
                                                 style={{ width: `${(progress.current / progress.total) * 100}%` }}
                                             ></div>
@@ -133,4 +133,4 @@ const DatabaseMigrations: React.FC<DatabaseMigrationsProps> = ({ user, showPoint
     );
 };
 
-export default DatabaseMigrations; 
+export default DatabaseMigrations;

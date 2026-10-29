@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { admin } from '../../firebase/firebaseAdmin';
+import { serverDb, serverAuth } from "../../lib/backend/admin";
 
 const stripe = process.env.STRIPE_SECRET_KEY
   ? new Stripe(process.env.STRIPE_SECRET_KEY)

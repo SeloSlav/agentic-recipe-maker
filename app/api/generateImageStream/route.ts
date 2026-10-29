@@ -1,6 +1,5 @@
-import { admin } from '../../firebase/firebaseAdmin';
-import { getStorage } from 'firebase-admin/storage';
-import { initializeApp, getApps, cert } from 'firebase-admin/app';
+import { saveFile, localFileUrl } from '../../lib/backend/files-server';
+import { serverDb, serverAuth } from "../../lib/backend/admin";
 
 // Image style options - must match generateImage route and settings page
 const imageStyleOptions: Record<string, { prompt: string }> = {
@@ -35,20 +34,6 @@ const imageStyleOptions: Record<string, { prompt: string }> = {
         prompt: "IMPORTANT: This must be a 2D animated illustration, NOT a photograph. The dish is the clear focal point—large, prominent, center-frame, impossible to miss. Studio Ghibli style: painterly hand-drawn aesthetic with soft watercolor washes, gentle gouache-like layers, organic flowing lines. The dish itself rendered with care and warmth, rounded inviting shapes, rich appetizing detail. Background and setting are secondary—softly suggested, out of focus or simplified: a hint of warm wood, soft light, pastoral atmosphere. The food must dominate the composition. Hand-painted storybook quality of Spirited Away. Whimsical, nostalgic, inviting. No realism."
     }
 };
-
-const storageBucketName = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET;
-
-if (!getApps().length) {
-    try {
-        const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY!);
-        initializeApp({
-            credential: cert(serviceAccount),
-            storageBucket: storageBucketName
-        });
-    } catch (error) {
-        console.error("Firebase Admin SDK initialization error in generateImageStream:", error);
-    }
-}
 
 function encodeSSE(data: object): string {
     return `data: ${JSON.stringify(data)}\n\n`;
@@ -96,7 +81,7 @@ export async function POST(req: Request) {
                 let userStyle: string | null = null;
                 if (userId) {
                     try {
-                        const userDoc = await admin.firestore().collection('users').doc(userId).get();
+                        const userDoc = await serverDb.collection('users').doc(userId).get();
                         if (userDoc.exists) {
                             const userData = userDoc.data();
                             userStyle = userData?.preferredImageStyle || null;
@@ -210,28 +195,19 @@ export async function POST(req: Request) {
 
                 if (clientGone) return;
 
-                if (!finalB64 || !storageBucketName) {
+                if (!finalB64) {
                     safeEnqueue(controller, encoder, {
                         type: 'error',
-                        message: finalB64 ? 'Storage not configured' : 'No image generated'
+                        message: 'No image generated'
                     });
                     safeClose(controller);
                     return;
                 }
 
                 const imageBuffer = Buffer.from(finalB64, "base64");
-                const bucket = getStorage().bucket(storageBucketName);
-                const file = bucket.file(`recipe-images/${recipeId}.png`);
-
-                await file.save(imageBuffer, {
-                    metadata: { contentType: 'image/png' }
-                });
-
-                const [url] = await file.getSignedUrl({
-                    action: 'read',
-                    expires: '03-01-2500'
-                });
-
+                const key = `recipe-images/${recipeId}.png`;
+                await saveFile(key, imageBuffer, 'image/png');
+                const url = localFileUrl(key);
                 safeEnqueue(controller, encoder, { type: 'final', imageUrl: url });
             } catch (error) {
                 console.error('Error in generateImageStream:', error);

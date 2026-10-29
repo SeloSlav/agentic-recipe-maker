@@ -12,8 +12,8 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPaperclip, faCamera, faArrowUp, faArrowDown, faImage, faMagicWandSparkles, faUpload, faFileUpload, faClock, faMicrophone, faCircleQuestion } from "@fortawesome/free-solid-svg-icons";
 import { ChatMessages } from "./ChatMessages";
 import type { Message, NutritionalInfo } from "./types";
-import { getAuth, onAuthStateChanged } from "firebase/auth";
-import { getFirestore, doc, getDoc } from "firebase/firestore";
+import { getAuth, onAuthStateChanged } from "../lib/backend/auth";
+import { getDatabase, doc, getDoc } from "../lib/backend/database";
 import { ImageUploadPopup } from "./ImageUploadPopup";
 import { DrawImagePopup } from "./DrawImagePopup";
 import { LoadingSpinner } from "./LoadingSpinner";
@@ -32,10 +32,10 @@ interface ChatWindowProps {
 }
 
 async function fetchWithAuth(url: string, options: RequestInit = {}) {
-  const { auth } = await import("../firebase/firebase");
+  const { auth } = await import("../lib/backend/client");
   const user = auth?.currentUser;
   if (!user) throw new Error("Not authenticated");
-  const token = await user.getIdToken();
+  const token = await user.getSessionToken();
   return fetch(url, {
     ...options,
     headers: {
@@ -68,7 +68,7 @@ export const ChatWindow = forwardRef(
     const [showScrollButton, setShowScrollButton] = useState(false);
     const messagesContainerRef = useRef<HTMLDivElement>(null);
 
-    // Firebase state
+    // local backend state
     const [preferredCookingOil, setPreferredCookingOil] = useState<string | null>(null);
     const [dietaryPreferences, setDietaryPreferences] = useState<string[]>([]);
 
@@ -152,12 +152,12 @@ export const ChatWindow = forwardRef(
     useEffect(() => {
       const fetchUserPreferences = async () => {
         const auth = getAuth();
-        const firestore = getFirestore();
+        const database = getDatabase();
 
         onAuthStateChanged(auth, async (user) => {
           if (user) {
             try {
-              const userDocRef = doc(firestore, "users", user.uid);
+              const userDocRef = doc(database, "users", user.uid);
               // console.log("Current User ID:", user.uid); // Log the user ID
               const userDoc = await getDoc(userDocRef);
               if (userDoc.exists()) {
@@ -272,7 +272,7 @@ export const ChatWindow = forwardRef(
         };
         // console.log("Sending request with body:", requestBody); // Log the request body
 
-        const token = auth?.currentUser ? await auth.currentUser.getIdToken() : null;
+        const token = auth?.currentUser ? await auth.currentUser.getSessionToken() : null;
         const response = await fetch("/api/chat", {
           method: "POST",
           headers: {
@@ -450,8 +450,8 @@ export const ChatWindow = forwardRef(
           // Add the user's message with image preview
           setMessages(prev => [
             ...prev,
-            { 
-              role: 'user', 
+            {
+              role: 'user',
               content: 'Baba, look at this picture I took! What do you think?',
               imageUrl: imagePreview // Add the image URL to the message
             }
@@ -475,10 +475,10 @@ export const ChatWindow = forwardRef(
             ]);
           } else {
             console.error('API Error:', data);
-            const errorMessage = data.details 
+            const errorMessage = data.details
               ? `Sorry dear, something went wrong: ${data.details}`
               : 'Sorry dear, I had trouble analyzing that image. Could you try uploading it again?';
-            
+
             setMessages(prev => [
               ...prev,
               { role: 'assistant', content: errorMessage }
@@ -513,8 +513,8 @@ export const ChatWindow = forwardRef(
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ 
-            prompt, 
+          body: JSON.stringify({
+            prompt,
             userId,
             recipeId: drawingId
           }),
@@ -531,7 +531,7 @@ export const ChatWindow = forwardRef(
 
           // Add Baba's response with the generated image
           const babaResponse = `Here's what I drew for you, dear!\n\n![Generated Image](${data.imageUrl})`;
-          
+
           setMessages(prev => [
             ...prev,
             { role: 'assistant', content: babaResponse }

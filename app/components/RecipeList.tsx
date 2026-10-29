@@ -4,8 +4,8 @@ import React, { useEffect, useState, useRef } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import Image from "next/image";
-import { db } from "../firebase/firebase";
-import { collection, query, where, orderBy, limit, onSnapshot, doc, updateDoc, deleteDoc } from "firebase/firestore"; // Firestore methods
+import { db } from "../lib/backend/client";
+import { collection, query, where, orderBy, limit, onSnapshot, doc, updateDoc, deleteDoc } from "../lib/backend/database"; // database methods
 import { useAuth } from "../context/AuthContext"; // Import the AuthContext hook
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faEllipsisH, faThumbtack, faTrashAlt } from "@fortawesome/free-solid-svg-icons";
@@ -13,7 +13,7 @@ import { useDeleteRecipe } from "../context/DeleteRecipeContext";
 
 interface Recipe {
   recipeTitle: string;
-  id: string; // Firebase document ID
+  id: string; // local backend document ID
   createdAt: any; // Add the createdAt field to sort by it
   pinned: boolean; // Indicates if the recipe is pinned
   imageURL: string;
@@ -33,7 +33,7 @@ export const RecipeList = () => {
   useEffect(() => {
     if (!user) return; // If no user is authenticated, do not fetch recipes
 
-    // Fetch pinned recipes from Firestore
+    // Fetch pinned recipes from database
     const fetchPinnedRecipes = () => {
       const recipeCollection = collection(db, "recipes");
       const pinnedQuery = query(
@@ -58,7 +58,7 @@ export const RecipeList = () => {
       return unsubscribe;
     };
 
-    // Fetch all recipes from Firestore
+    // Fetch all recipes from database
     const fetchRecipes = () => {
       const recipeCollection = collection(db, "recipes");
       const allQuery = query(
@@ -130,7 +130,7 @@ export const RecipeList = () => {
     try {
       setLoadingPinAction(id);
       const recipeRef = doc(db, "recipes", id);
-      await updateDoc(recipeRef, { 
+      await updateDoc(recipeRef, {
         pinned: !isPinned,
         lastPinnedAt: !isPinned ? new Date().toISOString() : null
       });
@@ -372,8 +372,8 @@ export const RecipeList = () => {
                 <span>Advice that helps—no generic bot fluff</span>
               </li>
             </ul>
-            <Link 
-              href="/login" 
+            <Link
+              href="/login"
               className="block w-full text-center py-3 px-6 bg-amber-600 text-white font-semibold rounded-lg hover:bg-amber-700 active:scale-[0.98] transition-all shadow-md shadow-amber-900/20 hover:shadow-lg hover:shadow-amber-900/25"
             >
               Get Started Free

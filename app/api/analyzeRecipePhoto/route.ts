@@ -1,7 +1,8 @@
+import { lazyOpenAI } from '../../lib/openai-client';
 import { NextResponse } from 'next/server';
 import OpenAI from 'openai';
 
-const openai = new OpenAI({
+const openai = lazyOpenAI({
     apiKey: process.env.OPENAI_API_KEY
 });
 
@@ -80,4 +81,4 @@ For unrelated images:
         console.error("❌ Error analyzing recipe photo:", error);
         return NextResponse.json({ error: "Failed to analyze photo" }, { status: 500 });
     }
-} 
+}

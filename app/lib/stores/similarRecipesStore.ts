@@ -1,6 +1,6 @@
 /**
  * Similar recipes via pgvector.
- * Recipes are synced from Firestore; similarity search by embedding.
+ * Recipes are synced from database; similarity search by embedding.
  */
 import { Document } from "@langchain/core/documents";
 import { Pool } from "pg";

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import { admin } from '../../firebase/firebaseAdmin';
+import { serverDb, serverAuth } from "../../lib/backend/admin";
 
-const adminDb = admin.firestore();
+const adminDb = serverDb;
 
 export async function POST(req: Request) {
     let verifiedUserId: string;
@@ -11,7 +11,7 @@ export async function POST(req: Request) {
              return NextResponse.json({ error: "Unauthorized: Missing token" }, { status: 401 });
         }
         const idToken = authorization.split('Bearer ')[1];
-        const decodedToken = await admin.auth().verifyIdToken(idToken);
+        const decodedToken = await serverAuth.verifyToken(idToken);
         verifiedUserId = decodedToken.uid;
     } catch (error) {
         console.error("Auth Error in saveRecipe:", error);
@@ -84,7 +84,7 @@ export async function POST(req: Request) {
             cookingDifficulty,
             cookingTime,
             diet,
-            createdAt: admin.firestore.FieldValue.serverTimestamp() 
+            createdAt: serverDb.transforms.serverTimestamp()
         };
 
         console.log(`==> Attempting Admin SDK setDoc for docId: ${docId}`);

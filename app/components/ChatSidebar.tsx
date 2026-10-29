@@ -8,8 +8,8 @@ import { ChatList } from "./ChatList";
 import { SeloOilPromo } from "./SeloOilPromo";
 import Link from "next/link";
 import Image from "next/image";
-import { doc, onSnapshot } from 'firebase/firestore';
-import { db } from '../firebase/firebase';
+import { doc, onSnapshot } from '../lib/backend/database';
+import { db } from "../lib/backend/client";
 
 // Add shimmer effect for loading state
 const shimmer = (w: number, h: number) => `
@@ -95,7 +95,7 @@ export const ChatSidebar = ({
         return (
                         <div className="absolute right-0 z-40 bg-white rounded-xl shadow-lg w-48 border border-amber-100 p-2">
                 <ul className="space-y-1">
-                        <li 
+                        <li
                         className="flex items-center px-3 py-2 rounded-md hover:bg-amber-50 cursor-pointer disabled:opacity-50"
                         onClick={() => !loadingPinAction && handlePinUnpin(!!recipe.pinned)}
                     >
@@ -199,14 +199,14 @@ export const ChatSidebar = ({
 
                         {/* View All Recipes Link */}
                         <div className="pt-4 border-t border-amber-100 space-y-2">
-                            <Link 
+                            <Link
                                 href="/blog"
                                 className="flex items-center justify-center gap-2 text-sm text-amber-900/80 hover:text-amber-900 transition-colors p-2 rounded-lg hover:bg-amber-50"
                             >
                                 <FontAwesomeIcon icon={faNewspaper} className="text-amber-600" />
                                 <span>Blog</span>
                             </Link>
-                            <Link 
+                            <Link
                                 href="/meal-plans"
                                 className="flex items-center justify-center gap-2 text-sm text-amber-900/80 hover:text-amber-900 transition-colors p-2 rounded-lg hover:bg-amber-50"
                             >
@@ -216,7 +216,7 @@ export const ChatSidebar = ({
                                     Pro ⭐
                                 </span>
                             </Link>
-                            <Link 
+                            <Link
                                 href={user ? (username ? `/${username}` : "/recipes") : "/explore"}
                                 className="flex items-center justify-center gap-2 text-sm text-amber-900/80 hover:text-amber-900 transition-colors p-2 rounded-lg hover:bg-amber-50"
                             >
@@ -224,8 +224,8 @@ export const ChatSidebar = ({
                                 <span className="text-amber-600/70">→</span>
                             </Link>
 
-                            <Link 
-                                href="/upgrade" 
+                            <Link
+                                href="/upgrade"
                                 className="flex items-center justify-center gap-2 text-sm text-amber-900/80 hover:text-amber-900 transition-colors p-2 rounded-lg hover:bg-amber-50"
                             >
                                 <FontAwesomeIcon icon={faStarOfLife} className="text-amber-600" />

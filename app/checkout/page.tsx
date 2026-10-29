@@ -3,7 +3,7 @@
 import { useSearchParams } from 'next/navigation';
 import { useEffect, useState, Suspense } from 'react';
 import { LoadingSpinner } from '../components/LoadingSpinner';
-import { auth } from '../firebase/firebase';
+import { auth } from "../lib/backend/client";
 
 function CheckoutContent() {
   const searchParams = useSearchParams();

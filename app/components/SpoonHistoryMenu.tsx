@@ -2,7 +2,7 @@ import React, { useRef, useEffect } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faSpoon, faCheck, faCheckDouble } from "@fortawesome/free-solid-svg-icons";
 import { format } from 'date-fns';
-import { Timestamp } from 'firebase/firestore';
+import { Timestamp } from '../lib/backend/database';
 import Link from 'next/link';
 import { POINT_ACTIONS } from '../lib/spoonPoints';
 
@@ -55,19 +55,19 @@ const getActionEmoji = (actionType: string): string => {
 };
 
 // Shared TransactionRow component
-export const TransactionRow: React.FC<TransactionRowProps> = ({ 
-  transaction, 
+export const TransactionRow: React.FC<TransactionRowProps> = ({
+  transaction,
   showDate = 'short',
   onTransactionRead,
   className = ''
 }) => {
   const date = transaction.timestamp.toDate();
   const uniqueKey = `${date.getTime()}-${transaction.actionType}-${transaction.targetId || ''}`;
-  
+
   const renderContent = () => {
     if (transaction.actionType === "CAT_VISIT") {
       return (
-        <div 
+        <div
           className="font-medium truncate"
           title={transaction.details || POINT_ACTIONS[transaction.actionType]?.displayName}
         >
@@ -78,7 +78,7 @@ export const TransactionRow: React.FC<TransactionRowProps> = ({
 
     if (['GENERATE_SUMMARY', 'GENERATE_NUTRITION', 'GENERATE_PAIRINGS', 'GENERATE_TAGS', 'GENERATE_IMAGE', 'UPLOAD_IMAGE', 'SAVE_RECIPE'].includes(transaction.actionType) && transaction.targetId) {
       return (
-        <Link 
+        <Link
           href={`/recipe/${transaction.targetId}`}
           className="font-medium truncate hover:text-blue-600 transition-colors cursor-pointer"
           title={transaction.details || POINT_ACTIONS[transaction.actionType]?.displayName}
@@ -89,7 +89,7 @@ export const TransactionRow: React.FC<TransactionRowProps> = ({
     }
 
     return (
-      <div 
+      <div
         className="font-medium truncate"
         title={transaction.details || POINT_ACTIONS[transaction.actionType]?.displayName}
       >
@@ -117,7 +117,7 @@ export const TransactionRow: React.FC<TransactionRowProps> = ({
         }`}>
           <FontAwesomeIcon icon={faSpoon} className="mr-1" />
           <span className="font-bold">
-            {transaction.actionType === 'MARKETPLACE_PURCHASE' 
+            {transaction.actionType === 'MARKETPLACE_PURCHASE'
               ? `-${String(transaction.points).replace(/[^0-9]/g, '')}`
               : `+${String(transaction.points).replace(/[^0-9]/g, '')}`
             }
@@ -150,9 +150,9 @@ interface SpoonHistoryMenuProps {
   unreadCount: number;
 }
 
-export const SpoonHistoryMenu: React.FC<SpoonHistoryMenuProps> = ({ 
-  isOpen, 
-  onClose, 
+export const SpoonHistoryMenu: React.FC<SpoonHistoryMenuProps> = ({
+  isOpen,
+  onClose,
   transactions,
   totalPoints,
   onTransactionRead,
@@ -196,7 +196,7 @@ export const SpoonHistoryMenu: React.FC<SpoonHistoryMenuProps> = ({
             <span className="text-lg font-bold">{totalPoints}</span>
           </div>
         </div>
-        
+
         {unreadCount > 0 && (
           <div className="mt-2 flex items-center justify-between">
             <span className="text-sm text-gray-500">
@@ -240,8 +240,8 @@ export const SpoonHistoryMenu: React.FC<SpoonHistoryMenuProps> = ({
 
       {/* Fixed footer */}
       <div className="flex-shrink-0 pt-3 pb-4 px-4 border-t border-gray-200">
-        <Link 
-          href="/spoons" 
+        <Link
+          href="/spoons"
           className="flex items-center justify-center gap-2 text-sm text-gray-600 hover:text-gray-900 transition-colors p-2 rounded-xl hover:bg-amber-50"
         >
           <span>View Full History</span>
@@ -250,4 +250,4 @@ export const SpoonHistoryMenu: React.FC<SpoonHistoryMenuProps> = ({
       </div>
     </div>
   );
-}; 
+};

@@ -9,7 +9,7 @@
  *
  * Prerequisites:
  * - Dev server must be running: npm run dev
- * - OPENAI_API_KEY and Firebase env vars must be set in .env.local
+ * - OPENAI_API_KEY must be set in .env.local
  */
 
 import { writeFileSync, mkdirSync, existsSync } from 'fs';
@@ -55,7 +55,7 @@ async function generateStylePreview(style) {
   const { imageUrl } = await res.json();
   if (!imageUrl) throw new Error('No imageUrl in response');
 
-  const imgRes = await fetch(imageUrl);
+  const imgRes = await fetch(new URL(imageUrl, API_BASE));
   if (!imgRes.ok) throw new Error(`Failed to download image: ${imgRes.status}`);
   const buffer = Buffer.from(await imgRes.arrayBuffer());
   return buffer;

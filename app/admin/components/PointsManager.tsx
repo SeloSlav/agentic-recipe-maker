@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { collection, getDocs, doc, updateDoc, query, where } from 'firebase/firestore';
-import { db } from '../../firebase/firebase';
+import { collection, getDocs, doc, updateDoc, query, where } from '../../lib/backend/database';
+import { db } from "../../lib/backend/client";
 import { LoadingSpinner } from '../../components/LoadingSpinner';
 import { isAdmin } from '../../config/admin';
 
@@ -20,7 +20,7 @@ const PointsManager: React.FC<PointsManagerProps> = ({ user, showPointsToast }) 
         if (!user) return;
         const adminCheck = await isAdmin(user.uid);
         if (!adminCheck) return;
-        
+
         const value = parseInt(ownPointsInput);
         if (!isNaN(value)) {
             const userPointsRef = doc(db, 'spoonPoints', user.uid);
@@ -36,7 +36,7 @@ const PointsManager: React.FC<PointsManagerProps> = ({ user, showPointsToast }) 
         if (!user) return;
         const adminCheck = await isAdmin(user.uid);
         if (!adminCheck) return;
-        
+
         try {
             setLoading(true);
             setError(null);
@@ -81,7 +81,7 @@ const PointsManager: React.FC<PointsManagerProps> = ({ user, showPointsToast }) 
     return (
         <div className="bg-white rounded-xl p-6 mb-8">
             <h2 className="text-xl font-semibold mb-4">Points Management</h2>
-            
+
             {/* Set Own Points */}
             <div className="mb-8">
                 <h3 className="text-lg font-medium mb-4">Set Your Points</h3>

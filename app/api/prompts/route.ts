@@ -1,16 +1,16 @@
 import { NextResponse } from 'next/server';
-import { 
-  collection, 
-  addDoc, 
-  getDocs, 
-  query, 
-  where, 
-  orderBy, 
-  limit, 
+import {
+  collection,
+  addDoc,
+  getDocs,
+  query,
+  where,
+  orderBy,
+  limit,
   serverTimestamp,
   QueryConstraint
-} from 'firebase/firestore';
-import { db } from '../../firebase/firebase';
+} from '../../lib/backend/database';
+import { db } from "../../lib/backend/client";
 
 interface StorePromptData {
   userId?: string;
@@ -41,7 +41,7 @@ export async function GET(req: Request) {
     const userId = searchParams.get('userId');
     const promptType = searchParams.get('type');
     const maxResults = parseInt(searchParams.get('limit') || '100');
-    
+
     const constraints: QueryConstraint[] = [];
     if (userId) {
       constraints.push(where('userId', '==', userId));
@@ -51,15 +51,15 @@ export async function GET(req: Request) {
     }
     constraints.push(orderBy('timestamp', 'desc'));
     constraints.push(limit(maxResults));
-    
+
     const querySnapshot = await getDocs(query(collection(db, 'prompts'), ...constraints));
-    
+
     const prompts = querySnapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data(),
       timestamp: doc.data().timestamp?.toDate?.() || null
     }));
-    
+
     return NextResponse.json({ prompts });
   } catch (error: unknown) {
     const err = error as { code?: string; message?: string };
@@ -74,14 +74,14 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     const data = await req.json();
-    
+
     if (!data.message) {
       return NextResponse.json(
         { error: 'Message is required' },
         { status: 400 }
       );
     }
-    
+
     const result = await storePrompt({
       userId: data.userId || 'anonymous',
       message: data.message,
@@ -89,12 +89,12 @@ export async function POST(req: Request) {
       type: data.type || 'general',
       metadata: data.metadata || {},
     });
-    
+
     if (result.success) {
-      return NextResponse.json({ 
-        success: true, 
+      return NextResponse.json({
+        success: true,
         id: result.id,
-        message: 'Prompt stored successfully' 
+        message: 'Prompt stored successfully'
       });
     } else {
       return NextResponse.json(

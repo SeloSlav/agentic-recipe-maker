@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
-import { admin } from "../../../firebase/firebaseAdmin";
+import { serverDb, serverAuth } from "../../../lib/backend/admin";
 import {
   indexRecipes,
   type IndexedRecipe,
 } from "../../../lib/stores/similarRecipesStore";
 
-/** Admin-only: sync Firestore recipes to pgvector for similar-recipe search */
+/** Admin-only: sync database recipes to pgvector for similar-recipe search */
 export async function POST(req: Request) {
   try {
     const authHeader = req.headers.get("authorization");
@@ -14,15 +14,15 @@ export async function POST(req: Request) {
     }
 
     const idToken = authHeader.split("Bearer ")[1];
-    const decoded = await admin.auth().verifyIdToken(idToken);
+    const decoded = await serverAuth.verifyToken(idToken);
     const userId = decoded.uid;
 
-    const adminDoc = await admin.firestore().collection("admins").doc(userId).get();
+    const adminDoc = await serverDb.collection("admins").doc(userId).get();
     if (!adminDoc.exists || adminDoc.data()?.active !== true) {
       return NextResponse.json({ error: "Admin only" }, { status: 403 });
     }
 
-    const db = admin.firestore();
+    const db = serverDb;
     const snapshot = await db.collection("recipes").get();
 
     const recipes: IndexedRecipe[] = snapshot.docs

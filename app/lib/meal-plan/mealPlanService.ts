@@ -1,15 +1,15 @@
+import { lazyOpenAI } from '../openai-client';
 /**
  * Shared meal plan generation logic.
  * Used by: /api/meal-plan/send, /api/cron/meal-plans, and chat generate_meal_plan tool.
  */
-import { admin } from '../../firebase/firebaseAdmin';
+import { serverDb, serverAuth } from "../backend/admin";
 import OpenAI from 'openai';
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const openai = lazyOpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 function getBaseUrl(): string {
-  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
-  return `http://localhost:${process.env.PORT || 3000}`;
+  return `http://127.0.0.1:${process.env.PORT || 3001}`;
 }
 
 function formatPlanForEmail(
@@ -109,8 +109,8 @@ export async function generateMealPlanWithRecipes(
   ) as MealSlot[];
   const slotList = slots.join(', ');
 
-  const firestore = admin.firestore();
-  const historyCol = firestore.collection('users').doc(userId).collection('mealPlanHistory');
+  const database = serverDb;
+  const historyCol = database.collection('users').doc(userId).collection('mealPlanHistory');
 
   // Reuse last week: clone most recent weekly plan
   if (type === 'weekly' && reuseLastWeek) {
@@ -160,7 +160,7 @@ export async function generateMealPlanWithRecipes(
             days: filteredDays,
             shoppingList: shoppingList ?? null,
             source: source || 'mealPlan',
-            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            createdAt: serverDb.transforms.serverTimestamp(),
           });
           return {
             planId: historyRef.id,
@@ -279,7 +279,7 @@ ${preferenceContext}${ingredientsContext}${calorieContext}`;
     parsed.slots = filterSlots(parsed.slots);
   }
 
-  const recipesCol = firestore.collection('recipes');
+  const recipesCol = database.collection('recipes');
   const baseUrl = getBaseUrl();
 
   const createRecipe = async (recipeName: string, description: string): Promise<{ recipeId: string; ingredients: string[] }> => {
@@ -327,7 +327,7 @@ ${preferenceContext}${ingredientsContext}${calorieContext}`;
       source: 'mealPlan',
       mealPlanDescription: description,
       recipeSummary: details?.recipeSummary || '',
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      createdAt: serverDb.transforms.serverTimestamp(),
     });
     return { recipeId: recipeRef.id, ingredients };
   };
@@ -456,7 +456,7 @@ ${preferenceContext}${ingredientsContext}${calorieContext}`;
     slots: storedSlots,
     days: storedDays,
     source,
-    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    createdAt: serverDb.transforms.serverTimestamp(),
   };
   if (shoppingList != null) historyDoc.shoppingList = shoppingList;
 

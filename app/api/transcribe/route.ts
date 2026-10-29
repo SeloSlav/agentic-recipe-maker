@@ -1,10 +1,11 @@
+import { lazyOpenAI } from '../../lib/openai-client';
 import { NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
 
-const openai = new OpenAI({
+const openai = lazyOpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
@@ -59,11 +60,11 @@ export async function POST(request: Request) {
   } catch (error: any) {
     console.error('Error in transcribe API:', error);
     return NextResponse.json(
-      { 
+      {
         error: 'Failed to transcribe audio',
         details: error.message || 'Unknown error'
       },
       { status: 500 }
     );
   }
-} 
+}

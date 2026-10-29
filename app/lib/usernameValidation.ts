@@ -1,5 +1,5 @@
-import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
-import { db } from '../firebase/firebase';
+import { collection, query, where, getDocs, doc, getDoc } from './backend/database';
+import { db } from "./backend/client";
 import { isReservedPath } from '../config/reservedPaths';
 
 export interface UsernameValidationResult {
@@ -77,4 +77,4 @@ export const validateUsername = async (username: string, userId?: string): Promi
     }
 
     return { isValid: true };
-}; 
+};
