@@ -1,3 +1,4 @@
+import { getAIConfig } from "../../lib/ai-config";
 import { NextResponse } from 'next/server';
 import { awardPointsServer } from '../../lib/spoonPointsServer';
 import { serverDb, serverAuth } from "../../lib/backend/admin";
@@ -212,10 +213,8 @@ export async function POST(req: Request) {
     }
   }
 
-  const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-  if (!OPENAI_API_KEY) {
-    return NextResponse.json({ error: "Missing OpenAI API key" }, { status: 500 });
-  }
+  const ai = getAIConfig();
+  if (!ai.configured) return NextResponse.json({ error: ai.error }, { status: 503 });
 
   const originalSystemPrompt = `You are Baba Selo, a warm-hearted but delightfully snarky grandmother from Eastern Europe.
 

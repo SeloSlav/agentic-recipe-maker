@@ -1,10 +1,11 @@
-import { lazyOpenAI } from '../openai-client';
+import { MODELS } from '../models';
+import { lazyAIClient } from '../ai-client';
 /**
  * Shared meal plan generation logic for API routes and chat tools.
  */
 import OpenAI from 'openai';
 
-const openai = lazyOpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const ai = lazyAIClient();
 
 export interface MealPlanOptions {
   mealPlanPrompt?: string;
@@ -29,8 +30,8 @@ export async function generateMealPlan(options: MealPlanOptions): Promise<string
     ? `The user's preferences (in their own words): ${mealPlanPrompt.trim()}`
     : `Use ${oil} as the primary cooking oil. Respect dietary preferences: ${prefs.join(', ') || 'none specified'}.`;
 
-  const completion = await openai.chat.completions.create({
-    model: 'gpt-4o',
+  const completion = await ai.chat.completions.create({
+    model: MODELS.recipeGeneration,
     max_tokens: 2000,
     temperature: 0.8,
     messages: [

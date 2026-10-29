@@ -3,8 +3,8 @@
  * Flow: check_cache → [hit] return | [miss] retrieve_corpus → [direct] return | [else] generate → enrich → store_cache → return
  */
 import { StateGraph, Annotation } from "@langchain/langgraph";
-import { ChatOpenAI } from "@langchain/openai";
-import { MODELS } from "./models";
+import { createChatModel, messageText } from "./ai-model";
+import { requireAIConfig } from "./ai-config";
 import {
   checkRecipeCache,
   storeRecipeCache,
@@ -17,8 +17,7 @@ const DIRECT_MATCH_THRESHOLD = 0.1;
 const RAG_CONTEXT_THRESHOLD = 0.3;
 const RAG_CONTEXT_TOP_K = 3;
 
-const recipeModel = new ChatOpenAI({
-  model: MODELS.recipeGeneration,
+const recipeModel = createChatModel("recipeGeneration", {
   temperature: 0.5,
 });
 
@@ -92,6 +91,7 @@ async function generateNode(
   state: RecipeState
 ): Promise<Partial<RecipeState>> {
   if (state.fromCache) return {};
+  requireAIConfig();
 
   const corpusCtx = state.corpusContext ?? "";
   const ragBlock = corpusCtx
@@ -122,8 +122,7 @@ Rules:
     { role: "user", content: jsonPrompt },
   ]);
 
-  const text =
-    typeof response.content === "string" ? response.content : "";
+  const text = messageText(response).replace(/^\s*```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "").trim();
   let parsed: { ingredients?: string[]; directions?: string[] } = {};
   try {
     parsed = JSON.parse(text);

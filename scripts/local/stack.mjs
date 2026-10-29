@@ -71,5 +71,5 @@ export async function setup({ containers = true } = {}) {
   const pool = new Pool({ connectionString: env.POSTGRES_URL, connectionTimeoutMillis: 5000 });
   try { await pool.query('CREATE EXTENSION IF NOT EXISTS vector'); } finally { await pool.end(); }
   console.log('Local databases ready. Existing data was preserved.');
-  if (!env.OPENAI_API_KEY) console.log('Add OPENAI_API_KEY to .env.local for AI features. Browsing, saving, and the architecture view work without it.');
+  console.log(`AI provider: ${env.AI_PROVIDER || 'openai'}. Configure cloud credentials or a local model in .env.local; see docs/AI_PROVIDERS.md.`);
 }

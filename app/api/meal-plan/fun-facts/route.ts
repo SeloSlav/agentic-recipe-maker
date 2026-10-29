@@ -1,8 +1,9 @@
-import { lazyOpenAI } from '../../../lib/openai-client';
+import { MODELS } from '../../../lib/models';
+import { lazyAIClient } from '../../../lib/ai-client';
 import { NextResponse } from 'next/server';
 import OpenAI from 'openai';
 
-const openai = lazyOpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const ai = lazyAIClient();
 
 /**
  * Lightweight API to generate fun facts about the user's meal plan type.
@@ -18,8 +19,8 @@ export async function POST(req: Request) {
       ? `about ${preferences} cooking and meal planning`
       : 'about cooking, meal planning, and healthy eating in general';
 
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+    const completion = await ai.chat.completions.create({
+      model: MODELS.enrichment,
       max_tokens: 400,
       temperature: 0.9,
       messages: [

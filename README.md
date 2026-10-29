@@ -12,7 +12,7 @@ Install **Node.js 22+** and [SpacetimeDB 2.10.2](https://spacetimedb.com/install
 npm ci
 ```
 
-Copy [`.env.example`](.env.example) to `.env.local`. Add `OPENAI_API_KEY` if you want AI features, then:
+Copy [`.env.example`](.env.example) to `.env.local`. Choose a cloud or local AI provider using the [provider setup guide](docs/AI_PROVIDERS.md), then:
 
 ```sh
 npm run dev
@@ -20,14 +20,16 @@ npm run dev
 
 Open **[127.0.0.1:3001/login](http://127.0.0.1:3001/login)** and choose **Continue as local developer**. Startup launches the databases, builds the database module, and seeds a developer account and three original sample recipes. First startup also installs the module's pinned dependencies.
 
-You can browse, save and edit recipes, upload images, and inspect the architecture without an AI key. Chat, generation, semantic search, image generation, and transcription use OpenAI and require your own key; provider charges apply. No model or private recipe corpus is bundled.
+You can browse, save and edit recipes, upload images, and inspect the architecture without an AI key. For AI features, use OpenAI, Anthropic, Gemini, Mistral, Cohere, Bedrock, Azure, or hosted providers such as Groq and Together. Run local models through native Ollama, vLLM, llama.cpp or LocalAI instead if you prefer. No OpenAI key is needed for those providers. Models and private recipe corpus data are not bundled.
+
+For local inference, install [Ollama](https://ollama.com/download), run `ollama pull qwen2.5:7b` and `ollama pull nomic-embed-text`, then set `AI_PROVIDER=ollama` in `.env.local`. The default local chat and embedding models are those two models. See [all providers, credentials and model settings](docs/AI_PROVIDERS.md). Optional generated images and transcription still use a separate OpenAI key.
 
 ## What you can explore
 
 - **Recipe chat:** a LangGraph ReAct agent with 14 structured LangChain tools for recipes, substitutions, servings, timers, nutrition, and meal plans.
 - **Recipe generation:** a graph that checks semantic caches, retrieves recipe context, generates a recipe, and enriches the result.
 - **Recipes and meal plans:** local collections, profiles, saved chats, recipe uploads, meal history, and shopping lists.
-- **[Admin AI explorer](http://127.0.0.1:3001/admin/ai):** actual compiled graph topology, clickable node explanations, registered tools, model settings, and live backend health. This view does not call OpenAI.
+- **[Admin AI explorer](http://127.0.0.1:3001/admin/ai):** actual compiled graph topology, clickable node explanations, registered tools, model settings, and live backend health. This view does not call AI providers.
 
 ## Local architecture
 
@@ -37,7 +39,7 @@ flowchart LR
   Next --> AppData[SpacetimeDB: private app documents]
   Next --> Vectors[PostgreSQL + pgvector: semantic stores]
   Next --> Files[Local image files]
-  Next --> AI[OpenAI: optional external inference]
+  Next --> AI[Cloud provider or local inference server]
 ```
 
 The default PostgreSQL runtime is **[PGlite](https://pglite.dev/)**, a WebAssembly build of PostgreSQL with pgvector exposed through the PostgreSQL wire protocol. For a regular PostgreSQL server with pgvector installed, set `LOCAL_POSTGRES_URL` in `.env.local`. The app uses the same SQL and LangChain queries with either runtime.
@@ -64,7 +66,7 @@ Everything under `.local/` is private runtime state and ignored by Git. Restarti
 | `npm test` | Run offline unit and repository checks |
 | `npm run test:integration` | Test the running local backend and pgvector |
 | `npm run sync:recipes -- --dry-run` | Count saved recipes without requesting embeddings |
-| `npm run sync:recipes` | Index saved recipes using your OpenAI embedding key |
+| `npm run sync:recipes` | Index saved recipes using your selected embedding provider |
 
 Use Ctrl+C to stop services started by the launcher. Services that were already running are left alone. See [local development](docs/LOCAL_DEVELOPMENT.md) for native executables, ports, optional Docker, external databases, and troubleshooting.
 
@@ -83,7 +85,7 @@ spacetimedb/src/        Private document tables and transactional reducer
 docs/                  Setup and architecture documentation
 ```
 
-Model names are centralized in [`app/lib/models.ts`](app/lib/models.ts). Read the [AI architecture notes](docs/LANGCHAIN_VECTOR_CACHE_ARCHITECTURE.md) for routing, cache thresholds, and retrieval behavior.
+Providers, credentials, and per-task model names are configured through `.env.local` and [`app/lib/ai-config.ts`](app/lib/ai-config.ts). Chat and embeddings can use different providers; changing embedding models isolates their vector tables. Read the [AI architecture notes](docs/LANGCHAIN_VECTOR_CACHE_ARCHITECTURE.md) for routing, cache thresholds, and retrieval behavior.
 
 Optional payment, email, and voice-history integrations remain in the source as extension examples. The default local launcher disables payment, email, and cron credentials. They are not needed for the local app and are not configured by this quick start.
 

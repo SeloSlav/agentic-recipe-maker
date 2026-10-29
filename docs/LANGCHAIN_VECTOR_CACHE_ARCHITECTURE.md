@@ -6,7 +6,7 @@ The `/admin/ai` explorer reads the application's compiled LangGraph graphs and r
 
 `app/api/chat/route.ts` validates messages, resolves a signed local session, and assembles the system prompt. For recipe-related messages it can retrieve corpus context; Pro users can also retrieve past conversation turns.
 
-`app/lib/chatGraph.ts` creates a LangGraph ReAct agent with `ChatOpenAI` and tools from `chatToolsLangchain.ts`. Each tool uses a Zod argument schema and calls the application's existing handlers. The agent can loop through tools before returning its final response.
+`app/lib/chatGraph.ts` creates a LangGraph ReAct agent with the configured native/provider adapter from `ai-model.ts` and tools from `chatToolsLangchain.ts`. Each tool uses a Zod argument schema and calls the application's existing handlers. The agent can loop through tools before returning its final response.
 
 ```mermaid
 flowchart LR
@@ -16,7 +16,7 @@ flowchart LR
   Agent -->|answer| Done
 ```
 
-There are 14 registered tools: image generation, recipe saving, similar recipes, serving conversion, nutrition, substitution, timers, translation, today's meals, meal-plan generation, adding a meal, seasonal tips, ingredient search, and unit conversion. Meal-plan generation emits custom progress events for the UI. Some supporting handlers call the OpenAI SDK directly.
+There are 14 registered tools: image generation, recipe saving, similar recipes, serving conversion, nutrition, substitution, timers, translation, today's meals, meal-plan generation, adding a meal, seasonal tips, ingredient search, and unit conversion. Meal-plan generation emits custom progress events for the UI. Text handlers and meal planning use the same selected provider adapter. Optional generated images and transcription use their separate OpenAI integration.
 
 ## Recipe pipeline
 
@@ -38,7 +38,7 @@ Generation returns validated JSON ingredient and direction arrays. When `generat
 
 ## Semantic stores
 
-All stores use LangChain's PostgreSQL vector integration and cosine distance, where smaller values indicate closer matches. The default embedding model is `text-embedding-3-small`; model names live in `app/lib/models.ts`.
+All stores use LangChain's PostgreSQL vector integration and cosine distance, where smaller values indicate closer matches. The embedding provider is configured independently in `.env.local`; OpenAI defaults to `text-embedding-3-small`, Ollama to `nomic-embed-text`. Other providers and overrides are described in [AI providers](AI_PROVIDERS.md). Non-default embedding spaces add a provider/endpoint/region/model hash to these logical table names, so switching models never mixes vectors. Cache thresholds below are existing heuristics and may need tuning for a different model.
 
 | Table | Purpose | Retrieval rule |
 | --- | --- | --- |

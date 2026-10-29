@@ -1,17 +1,16 @@
-import { lazyOpenAI } from '../../lib/openai-client';
+import { MODELS } from '../../lib/models';
+import { lazyAIClient } from '../../lib/ai-client';
 import { NextResponse } from 'next/server';
 import OpenAI from 'openai';
 
-const openai = lazyOpenAI({
-    apiKey: process.env.OPENAI_API_KEY
-});
+const ai = lazyAIClient();
 
 export async function POST(request: Request) {
     try {
         const { text } = await request.json();
 
-        const response = await openai.chat.completions.create({
-            model: "gpt-4o",
+        const response = await ai.chat.completions.create({
+            model: MODELS.enrichment,
             messages: [
                 {
                     role: "system",

@@ -1,4 +1,5 @@
-import { lazyOpenAI } from '../openai-client';
+import { MODELS } from '../models';
+import { lazyAIClient } from '../ai-client';
 /**
  * Shared meal plan generation logic.
  * Used by: /api/meal-plan/send, /api/cron/meal-plans, and chat generate_meal_plan tool.
@@ -6,7 +7,7 @@ import { lazyOpenAI } from '../openai-client';
 import { serverDb, serverAuth } from "../backend/admin";
 import OpenAI from 'openai';
 
-const openai = lazyOpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const ai = lazyAIClient();
 
 function getBaseUrl(): string {
   return `http://127.0.0.1:${process.env.PORT || 3001}`;
@@ -235,8 +236,8 @@ ${preferenceContext}${ingredientsContext}${calorieContext}`)
 Include only these slots: ${slotList}.
 ${preferenceContext}${ingredientsContext}${calorieContext}`;
 
-  const completion = await openai.chat.completions.create({
-    model: 'gpt-4o',
+  const completion = await ai.chat.completions.create({
+    model: MODELS.recipeGeneration,
     max_tokens: isWeekly ? 4000 : 2500,
     temperature: 0.8,
     response_format: { type: 'json_object' },
@@ -406,8 +407,8 @@ ${preferenceContext}${ingredientsContext}${calorieContext}`;
   let shoppingList: string | Record<string, string | string[]> | undefined;
   if (includeShoppingList && allIngredients.length > 0) {
     try {
-      const consolidateRes = await openai.chat.completions.create({
-        model: 'gpt-4o-mini',
+      const consolidateRes = await ai.chat.completions.create({
+        model: MODELS.recipeGeneration,
         max_tokens: 2000,
         temperature: 0.3,
         response_format: { type: 'json_object' },

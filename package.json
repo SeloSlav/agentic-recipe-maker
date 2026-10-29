@@ -4,14 +4,16 @@
   "private": true,
   "description": "Local-first AI cooking companion for Balkan recipes and meal planning. Built with Next.js, LangChain/LangGraph, SpacetimeDB, and PostgreSQL/pgvector.",
   "license": "MIT",
-  "engines": { "node": ">=22" },
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "dev": "node scripts/dev-local.mjs",
     "dev:local": "node scripts/dev-local.mjs",
     "local:setup": "node scripts/dev-local.mjs --setup-only",
     "docker:stop": "docker compose stop",
     "typecheck": "tsc --noEmit",
-    "test": "tsx --test scripts/local/backend.test.ts scripts/local/runtime.test.mjs",
+    "test": "tsx --test scripts/local/backend.test.ts scripts/local/runtime.test.mjs scripts/local/ai.test.ts",
     "test:local": "tsx --test scripts/local/backend.test.ts",
     "test:integration": "node scripts/local/test-integration.mjs",
     "build": "next build",
@@ -26,21 +28,29 @@
     "clean": "node scripts/clean-next.mjs"
   },
   "dependencies": {
+    "@11labs/react": "^0.0.4",
+    "@aws-sdk/client-bedrock-runtime": "^3.1159.0",
     "@electric-sql/pglite": "^0.5.13",
     "@electric-sql/pglite-pgvector": "^0.0.14",
     "@electric-sql/pglite-socket": "^0.2.16",
-    "@11labs/react": "^0.0.4",
     "@fortawesome/fontawesome-svg-core": "^6.7.1",
     "@fortawesome/free-brands-svg-icons": "^6.7.2",
     "@fortawesome/free-regular-svg-icons": "^6.7.1",
     "@fortawesome/free-solid-svg-icons": "^6.7.1",
     "@fortawesome/react-fontawesome": "^0.2.2",
-    "@langchain/pgvector": "^0.1.0",
+    "@langchain/anthropic": "^1.6.0",
+    "@langchain/aws": "^1.5.1",
+    "@langchain/cohere": "^1.1.0",
     "@langchain/core": "^1.1.24",
+    "@langchain/google": "^0.2.12",
     "@langchain/langgraph": "^1.1.5",
+    "@langchain/mistralai": "^1.2.0",
+    "@langchain/ollama": "^1.3.0",
     "@langchain/openai": "^1.2.8",
+    "@langchain/pgvector": "^0.1.0",
     "chart.js": "^4.4.7",
     "chartjs-adapter-date-fns": "^3.0.0",
+    "cohere-ai": "^7.21.0",
     "date-fns": "^4.1.0",
     "dotenv": "^16.4.7",
     "next": "^15.0.7",
@@ -63,5 +73,8 @@
     "tsx": "^4.21.0",
     "typescript": "5.7.2"
   },
-  "overrides": { "postcss": "$postcss", "sharp": "$sharp" }
+  "overrides": {
+    "postcss": "$postcss",
+    "sharp": "$sharp"
+  }
 }

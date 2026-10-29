@@ -1,12 +1,11 @@
-import { lazyOpenAI } from '../../lib/openai-client';
+import { MODELS } from '../../lib/models';
+import { lazyAIClient } from '../../lib/ai-client';
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
 import { db } from "../../lib/backend/client";
 import { collection, addDoc, serverTimestamp } from '../../lib/backend/database';
 
-const openai = lazyOpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-});
+const ai = lazyAIClient();
 
 // Helper function to store user prompts in local backend
 const storeUserPrompt = async (userId: string | undefined, message: string, conversationHistory: any[], recipeContext: string) => {
@@ -81,8 +80,8 @@ ${recipeContent}
             ...messages.slice(1) // Skip the first generic greeting message
         ];
 
-        const completion = await openai.chat.completions.create({
-            model: "gpt-4",
+        const completion = await ai.chat.completions.create({
+            model: MODELS.recipeGeneration,
             messages: apiMessages,
             temperature: 0.7,
             max_tokens: 500,

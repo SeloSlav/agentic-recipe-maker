@@ -4,13 +4,12 @@
  */
 
 import { serverDb, serverAuth } from "./backend/admin";
-import { ChatOpenAI } from '@langchain/openai';
-import { MODELS } from './models';
+import { createChatModel, messageText } from './ai-model';
+import { requireAIConfig } from './ai-config';
 
 const adminDb = serverDb;
 
-const translationModel = new ChatOpenAI({
-  model: MODELS.translation,
+const translationModel = createChatModel('translation', {
   temperature: 0.3,
   maxTokens: 2000,
 });
@@ -241,6 +240,7 @@ export async function handleTranslateRecipe({ recipeContent, targetLanguage }: {
     return { success: false, error: 'Need recipe and target language.' };
   }
   try {
+    requireAIConfig();
     const response = await translationModel.invoke([
       {
         role: 'system',
@@ -248,7 +248,7 @@ export async function handleTranslateRecipe({ recipeContent, targetLanguage }: {
       },
       { role: 'user', content: recipeContent },
     ]);
-    const translated = typeof response.content === 'string' ? response.content : '';
+    const translated = messageText(response);
     if (!translated) return { success: false, error: 'Translation failed.' };
     return { success: true, translatedRecipe: translated, targetLanguage };
   } catch (err) {

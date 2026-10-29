@@ -25,6 +25,7 @@ export function createBabaChatTools(userId: string) {
   return [
     tool(
       async ({ subject }) => {
+        if (!process.env.OPENAI_API_KEY) return JSON.stringify({ success: false, error: "Optional image generation is not configured. Recipe chat is available; generating images requires a separate OpenAI key." });
         const { generateImageForChat } = await import("./generateImageForChat");
         const { imageUrl } = await generateImageForChat(
           `Photorealistic food photograph. ${subject}. Natural lighting, appetizing, professional food photography.`,

@@ -4,13 +4,13 @@
 
 - Node.js 22+ and npm.
 - [SpacetimeDB 2.10.2](https://spacetimedb.com/install), matching the module package version.
-- An OpenAI API key only when you want AI features.
+- A supported cloud account or local inference server only when you want AI features. See [provider setup](AI_PROVIDERS.md).
 
 The default setup uses native SpacetimeDB and PostgreSQL/pgvector through PGlite. It needs no Docker engine, database account, or third-party sign-in.
 
 ```sh
 npm ci
-# Copy .env.example to .env.local, then optionally add OPENAI_API_KEY.
+# Copy .env.example to .env.local, then configure your cloud or local AI provider.
 npm run dev
 ```
 
@@ -22,7 +22,12 @@ On Windows, the launcher finds the installed standalone server under `%LOCALAPPD
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
-| `OPENAI_API_KEY` | Unset | Enables AI inference and embeddings |
+| `AI_PROVIDER` | `openai` | Cloud or local provider; see [provider matrix](AI_PROVIDERS.md) |
+| `AI_MODEL` | Provider-specific | Text model ID or deployment name |
+| `AI_API_KEY` | Unset | Selected chat provider credential (native key variables also work) |
+| `AI_BASE_URL` | Provider preset | Override provider endpoint |
+| `AI_EMBEDDING_PROVIDER` | Provider-specific | Independent embedding service or `disabled` |
+| `OPENAI_API_KEY` | Unset | OpenAI credential; optional media generation/transcription |
 | `LOCAL_APP_PORT` | `3001` | Next.js port |
 | `LOCAL_POSTGRES_PORT` | `5433` | Embedded PostgreSQL port |
 | `LOCAL_SPACETIME_PORT` | `3100` | Native SpacetimeDB port |
@@ -118,7 +123,7 @@ Integration tests use temporary documents and a temporary vector table. They ver
 - **Active launcher lock:** stop the existing `npm run dev` process. Do not run two PGlite processes against one directory.
 - **Database permission failure:** confirm you are using the original `.local/spacetime-owner.json` for this server.
 - **Images or history fail after sign-in:** check the local server terminal and sign in again at `/login`.
-- **AI requests fail:** verify `OPENAI_API_KEY`; check provider quota and credentials without posting them publicly.
+- **AI requests fail:** check the selected provider and model in `/admin/ai`, then verify its credentials, tool support, quota, or local server. See [provider troubleshooting and configuration](AI_PROVIDERS.md).
 - **First startup is slow:** the module's npm dependencies and the initial Next.js pages are compiled on first use.
 
 Do not publish `.local/`, `.env.local`, logs, database dumps, uploads, or private ingested datasets. The [security policy](../SECURITY.md) explains the local trust boundary.

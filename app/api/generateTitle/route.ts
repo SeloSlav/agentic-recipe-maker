@@ -1,10 +1,9 @@
-import { lazyOpenAI } from '../../lib/openai-client';
+import { MODELS } from '../../lib/models';
+import { lazyAIClient } from '../../lib/ai-client';
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
 
-const openai = lazyOpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+const ai = lazyAIClient();
 
 export async function POST(request: Request) {
   try {
@@ -43,7 +42,7 @@ Example bad titles:
 - Fresh and Tangy Greek Salad: Perfect for Summer
 - A Delicious Mediterranean Dish`;
 
-    const completion = await openai.chat.completions.create({
+    const completion = await ai.chat.completions.create({
       messages: [
         {
           role: "system",
@@ -54,7 +53,7 @@ Example bad titles:
           content: prompt
         }
       ],
-      model: "gpt-3.5-turbo",
+      model: MODELS.enrichment,
       temperature: 0.3,
       max_tokens: 60,
     });

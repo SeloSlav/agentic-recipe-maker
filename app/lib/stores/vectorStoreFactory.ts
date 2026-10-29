@@ -1,18 +1,20 @@
 /**
  * Shared vector store factory.
- * Single OpenAIEmbeddings instance, single pgvector extension check,
+ * Provider-selected embeddings, a single pgvector extension check,
  * and cached PGVectorStore instances per table.
  */
 import { PGVectorStore } from "@langchain/pgvector";
-import { OpenAIEmbeddings } from "@langchain/openai";
+import { createEmbeddings, resolveVectorTableName } from "../ai-embeddings";
+import { getAIConfig } from "../ai-config";
+export { resolveVectorTableName } from "../ai-embeddings";
 import { Pool, PoolConfig } from "pg";
-import { MODELS } from "../models";
+
 
 let extensionEnsured = false;
 const storeCache = new Map<string, PGVectorStore>();
 let sharedPool: Pool | null = null;
 
-const embeddings = new OpenAIEmbeddings({ model: MODELS.embedding });
+
 
 export function getConnectionConfig(): PoolConfig | null {
   const url = process.env.POSTGRES_URL ?? process.env.DATABASE_URL;
@@ -60,9 +62,14 @@ export async function closeAllStores(): Promise<void> {
 }
 
 export async function getOrCreateStore(tableName: string): Promise<PGVectorStore | null> {
+  const aiConfig = getAIConfig();
+  if (!aiConfig.embeddings.configured) return null;
+  tableName = resolveVectorTableName(tableName, aiConfig);
   if (storeCache.has(tableName)) return storeCache.get(tableName)!;
   const config = getConnectionConfig();
   if (!config) return null;
+  const embeddings = createEmbeddings(aiConfig);
+  if (!embeddings) return null;
 
   try {
     await ensureExtension(config);

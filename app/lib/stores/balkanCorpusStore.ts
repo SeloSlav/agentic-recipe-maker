@@ -3,7 +3,7 @@
  * Pre-ingested authentic Balkan recipes; used for retrieval and direct return.
  */
 import { Document } from "@langchain/core/documents";
-import { getOrCreateStore, getSharedPool } from "./vectorStoreFactory";
+import { getOrCreateStore, getSharedPool, resolveVectorTableName } from "./vectorStoreFactory";
 
 const TABLE_NAME = "balkan_recipe_corpus";
 const DEFAULT_LIMIT = 5;
@@ -101,7 +101,7 @@ export async function getCorpusCount(): Promise<number> {
   if (!pool) return 0;
 
   try {
-    const res = await pool.query(`SELECT COUNT(*)::int FROM ${TABLE_NAME}`);
+    const res = await pool.query(`SELECT COUNT(*)::int FROM ${resolveVectorTableName(TABLE_NAME)}`);
     return res.rows[0]?.count ?? 0;
   } catch {
     return 0;

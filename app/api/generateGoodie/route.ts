@@ -1,12 +1,11 @@
-import { lazyOpenAI } from '../../lib/openai-client';
+import { MODELS } from '../../lib/models';
+import { lazyAIClient } from '../../lib/ai-client';
 import { NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { collection, getDocs, query, where } from '../../lib/backend/database';
 import { db } from "../../lib/backend/client";
 
-const openai = lazyOpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-});
+const ai = lazyAIClient();
 
 export async function POST(req: Request) {
     try {
@@ -101,8 +100,8 @@ Please provide the item details in the following JSON format:
     "imageUrl": "image url path"
 }`;
 
-        const response = await openai.chat.completions.create({
-            model: "gpt-4",
+        const response = await ai.chat.completions.create({
+            model: MODELS.enrichment,
             messages: [
                 {
                     role: "system",

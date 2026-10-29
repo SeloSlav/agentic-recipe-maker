@@ -1,10 +1,9 @@
-import { lazyOpenAI } from '../../lib/openai-client';
+import { MODELS } from '../../lib/models';
+import { lazyAIClient } from '../../lib/ai-client';
 import { NextResponse } from 'next/server';
 import OpenAI from 'openai';
 
-const openai = lazyOpenAI({
-    apiKey: process.env.OPENAI_API_KEY
-});
+const ai = lazyAIClient("vision");
 
 export async function POST(req: Request) {
     try {
@@ -46,9 +45,9 @@ For matching images:
 For unrelated images:
 {"score": 0, "explanation": "Image is unrelated to the recipe"}`;
 
-        console.log("🤖 Calling GPT-4 for analysis...");
-        const response = await openai.chat.completions.create({
-            model: "gpt-4o-mini",
+        console.log("🤖 Calling configured vision model for analysis...");
+        const response = await ai.chat.completions.create({
+            model: MODELS.vision,
             messages: [
                 {
                     role: "user",
@@ -65,7 +64,6 @@ For unrelated images:
             ],
             max_tokens: 150,
             temperature: 0.7,
-            store: true
         });
 
         try {

@@ -1,11 +1,10 @@
-import { lazyOpenAI } from '../../lib/openai-client';
+import { MODELS } from '../../lib/models';
+import { lazyAIClient } from '../../lib/ai-client';
 import OpenAI from 'openai';
 import { NextResponse } from 'next/server';
 import sharp from 'sharp';
 
-const openai = lazyOpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+const ai = lazyAIClient("vision");
 
 export async function POST(request: Request) {
   try {
@@ -86,17 +85,10 @@ export async function POST(request: Request) {
     console.log('Base64 string length:', base64Image.length);
     console.log('First 100 chars of base64:', base64Image.substring(0, 100));
 
-    if (!process.env.OPENAI_API_KEY) {
-      console.error('OpenAI API key is not configured');
-      return NextResponse.json(
-        { error: 'OpenAI API key is not configured' },
-        { status: 500 }
-      );
-    }
 
-    // Call GPT-4 Turbo with vision capabilities
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
+    // Call the configured vision model
+    const response = await ai.chat.completions.create({
+      model: MODELS.vision,
       messages: [
         {
           role: "system",
@@ -172,7 +164,7 @@ CRITICAL REMINDER FOR RECIPES:
           ]
         }
       ],
-      store: true,
+
       max_tokens: 500
     });
 

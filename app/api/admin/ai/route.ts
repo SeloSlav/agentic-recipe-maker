@@ -6,7 +6,7 @@ import { spacetimeFetch } from "../../../lib/backend/spacetime-server";
 import { createChatAgent } from "../../../lib/chatGraph";
 import { createRecipeGraph } from "../../../lib/recipeGraph";
 import { createBabaChatTools } from "../../../lib/chatToolsLangchain";
-import { MODELS } from "../../../lib/models";
+import { getPublicAIStatus } from "../../../lib/ai-config";
 
 export const dynamic = "force-dynamic";
 function graphData(graph: any) {
@@ -39,10 +39,11 @@ export async function GET(request: Request) {
     let documents = { status: "ready", detail: "SpacetimeDB connected · private documents" };
     try { await spacetimeFetch("sql", { method: "POST", body: "SELECT path FROM document LIMIT 1" }); }
     catch { documents = { status: "unavailable", detail: "Cannot connect to SpacetimeDB" }; }
+    const ai = getPublicAIStatus();
     return NextResponse.json({
-      checkedAt: new Date().toISOString(), backend: "SpacetimeDB + local files", models: MODELS,
+      checkedAt: new Date().toISOString(), backend: "SpacetimeDB + local files", provider: ai.provider, models: ai.models,
       graphs: { chat, recipe }, tools,
-      services: { documents, postgres, openai: { status: process.env.OPENAI_API_KEY ? "configured" : "unconfigured", detail: process.env.OPENAI_API_KEY ? "API key present · provider not contacted" : "Add OPENAI_API_KEY to enable AI" } },
+      services: { documents, postgres, ai: ai.text, embeddings: ai.embeddings, media: ai.media },
     }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     console.error("Architecture inspection failed:", error);

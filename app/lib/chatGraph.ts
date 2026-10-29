@@ -3,18 +3,17 @@
  * Uses a ReAct agent with streaming support for tool progress events.
  */
 import { createReactAgent } from "@langchain/langgraph/prebuilt";
-import { ChatOpenAI } from "@langchain/openai";
+import { createChatModel } from "./ai-model";
+import { requireAIConfig } from "./ai-config";
 import {
   HumanMessage,
   AIMessage,
   SystemMessage,
   type BaseMessage,
 } from "@langchain/core/messages";
-import { MODELS } from "./models";
 import { createBabaChatTools } from "./chatToolsLangchain";
 
-const chatModel = new ChatOpenAI({
-  model: MODELS.chat,
+const chatModel = createChatModel("chat", {
   temperature: 1.0,
   maxTokens: 1500,
 });
@@ -97,6 +96,7 @@ export function createChatAgent(userId: string, systemPrompt: string) {
 export async function runChatGraph(
   input: ChatGraphInput
 ): Promise<ChatGraphOutput> {
+  requireAIConfig();
   const { messages, systemPrompt, userId } = input;
   const agent = createChatAgent(userId, systemPrompt);
 
@@ -141,6 +141,7 @@ export type ChatStreamEvent =
 export async function* runChatGraphStream(
   input: ChatGraphInput
 ): AsyncGenerator<ChatStreamEvent, ChatGraphOutput, unknown> {
+  requireAIConfig();
   const { messages, systemPrompt, userId } = input;
   const agent = createChatAgent(userId, systemPrompt);
 

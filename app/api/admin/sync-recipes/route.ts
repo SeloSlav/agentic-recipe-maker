@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { serverDb, serverAuth } from "../../../lib/backend/admin";
+import { getAIConfig } from "../../../lib/ai-config";
 import {
   indexRecipes,
   type IndexedRecipe,
@@ -22,6 +23,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Admin only" }, { status: 403 });
     }
 
+    const embeddingConfig = getAIConfig().embeddings;
+    if (!embeddingConfig.configured) return NextResponse.json({ error: embeddingConfig.error }, { status: 503 });
     const db = serverDb;
     const snapshot = await db.collection("recipes").get();
 

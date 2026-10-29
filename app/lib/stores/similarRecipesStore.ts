@@ -6,6 +6,7 @@ import { Document } from "@langchain/core/documents";
 import { Pool } from "pg";
 import {
   getOrCreateStore,
+  resolveVectorTableName,
   getSharedPool,
   getConnectionConfig,
 } from "./vectorStoreFactory";
@@ -94,21 +95,20 @@ export async function indexRecipes(
   clearFirst = false
 ): Promise<void> {
   const config = getConnectionConfig();
-  if (!config) return;
+  if (!config) throw new Error("Configure PostgreSQL before syncing recipes.");
+  const store = await getOrCreateStore(TABLE_NAME);
+  if (!store) throw new Error("Cannot initialize recipe embeddings. Check the embedding provider and PostgreSQL.");
 
   if (clearFirst) {
     const pool = new Pool(config);
     try {
-      await pool.query(`TRUNCATE TABLE ${TABLE_NAME}`);
+      await pool.query(`TRUNCATE TABLE ${resolveVectorTableName(TABLE_NAME)}`);
     } catch {
       // Table might not exist yet
     } finally {
       await pool.end();
     }
   }
-
-  const store = await getOrCreateStore(TABLE_NAME);
-  if (!store) return;
 
   // Compute embedding text once per recipe (not twice via filter + map)
   const docs = recipes
@@ -128,6 +128,7 @@ export async function indexRecipes(
     await store.addDocuments(docs);
   } catch (err) {
     console.error("Failed to index recipes:", err);
+    throw err;
   }
 }
 
@@ -139,7 +140,7 @@ async function getStoredEmbedding(
 
   try {
     const res = await pool.query(
-      `SELECT embedding FROM ${TABLE_NAME} WHERE metadata->>'recipeId' = $1 LIMIT 1`,
+      `SELECT embedding FROM ${resolveVectorTableName(TABLE_NAME)} WHERE metadata->>'recipeId' = $1 LIMIT 1`,
       [recipeId]
     );
     const row = res.rows[0];

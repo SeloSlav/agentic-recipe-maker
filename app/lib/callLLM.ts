@@ -3,11 +3,10 @@
  * All enrichment routes (classify, summary, macro, pairing) use this
  * instead of raw fetch / OpenAI SDK calls.
  */
-import { ChatOpenAI } from "@langchain/openai";
-import { MODELS } from "./models";
+import { createChatModel, messageText } from "./ai-model";
+import { requireAIConfig } from "./ai-config";
 
-const enrichmentModel = new ChatOpenAI({
-  model: MODELS.enrichment,
+const enrichmentModel = createChatModel("enrichment", {
   temperature: 0,
   maxTokens: 500,
 });
@@ -26,10 +25,10 @@ export async function callLLM(
   userContent: string,
   options?: CallLLMOptions
 ): Promise<string> {
+  requireAIConfig();
   const model =
     options?.temperature !== undefined || options?.maxTokens !== undefined
-      ? new ChatOpenAI({
-          model: MODELS.enrichment,
+      ? createChatModel("enrichment", {
           temperature: options.temperature ?? 0,
           maxTokens: options.maxTokens ?? 500,
         })
@@ -40,7 +39,7 @@ export async function callLLM(
     { role: "user", content: userContent },
   ]);
 
-  return typeof response.content === "string" ? response.content : "";
+  return messageText(response);
 }
 
 /**
